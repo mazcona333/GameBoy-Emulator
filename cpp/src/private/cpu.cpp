@@ -56,7 +56,7 @@ void Cpu::Start()
     // pc = 0x0213;
     while (pc < 0xFFFF)
     {
-        //std::cout << std::hex << pc << "\n" << std::flush;
+        // std::cout << std::hex << pc << "\n" << std::flush;
         ExecuteNextOP();
     }
 }
@@ -615,11 +615,16 @@ void Cpu::OP_ADD(uint8_t Value)
 
     setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value), checkCarryAdd(getRegister8(REG_A), Value));
 
-    setRegister8(REG_A, Value);
+    setRegister8(REG_A, Result);
 }
 void Cpu::OP_ADC(uint8_t Value)
 {
-    OP_ADD(Value + getFlagC());
+    uint8_t Result = getRegister8(REG_A) + Value + getFlagC();
+
+    setFlags(getFlagZ(), 0, checkHalfCarryAdd(getRegister8(REG_A), Value + getFlagC()) || checkHalfCarryAdd(Value, getFlagC()), 
+                            checkCarryAdd(getRegister8(REG_A), Value + getFlagC()) || checkCarryAdd(Value, getFlagC())); // TODO Fix three way carry flag
+    
+    setRegister8(REG_A, Result);
 }
 void Cpu::OP_SUB(uint8_t Value)
 {
@@ -627,7 +632,7 @@ void Cpu::OP_SUB(uint8_t Value)
 
     setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value), checkCarrySub(getRegister8(REG_A), Value));
 
-    setRegister8(REG_A, Value);
+    setRegister8(REG_A, Result);
 }
 void Cpu::OP_SBC(uint8_t Value)
 {
@@ -682,11 +687,11 @@ void Cpu::OP_DEC(uint8_t DestRegister)
 
 void Cpu::OP_CCF()
 {
-    setFlags(getFlagC(), 0, 0, !getFlagC());
+    setFlags(getFlagZ(), 0, 0, !getFlagC());
 }
 void Cpu::OP_SCF()
 {
-    setFlags(getFlagC(), 0, 0, 1);
+    setFlags(getFlagZ(), 0, 0, 1);
 }
 void Cpu::OP_DAA()
 {
@@ -726,18 +731,32 @@ void Cpu::OP_CPL()
 
 void Cpu::OP_INC_r16(uint8_t DestRegister)
 {
-    setRegister16(DestRegister, getRegister16(DestRegister) + 1);
+    if (DestRegister < 6)
+        setRegister16(DestRegister, getRegister16(DestRegister) + 1);
+    else
+        sp++;
 }
 
 void Cpu::OP_DEC_r16(uint8_t DestRegister)
 {
-    setRegister16(DestRegister, getRegister16(DestRegister) - 1);
+    if (DestRegister < 6)
+        setRegister16(DestRegister, getRegister16(DestRegister) - 1);
+    else
+        sp--;
 }
 
 void Cpu::OP_ADD_hlr16(uint8_t SourceRegister)
 {
-    uint16_t NewValue = getRegister16(REG_HL) + getRegister16(SourceRegister);
-    setFlags(getFlagZ(), 0, checkHalfCarryAdd((getRegister16(REG_HL) & 0xFF00) >> 8, (getRegister16(SourceRegister) & 0xFF00) >> 8), checkCarryAdd((getRegister16(REG_HL) & 0xFF00) >> 8, (getRegister16(SourceRegister) & 0xFF00) >> 8));
+    uint16_t NewValue;
+    if (SourceRegister < 6)
+    {
+        NewValue = getRegister16(REG_HL) + getRegister16(SourceRegister);
+        setFlags(getFlagZ(), 0, checkHalfCarryAddr16(getRegister16(REG_HL), getRegister16(SourceRegister)), checkCarryAddr16(getRegister16(REG_HL), getRegister16(SourceRegister)));
+    }else{
+        NewValue = getRegister16(REG_HL) + sp;
+        setFlags(getFlagZ(), 0, checkHalfCarryAddr16(getRegister16(REG_HL), sp), checkCarryAddr16(getRegister16(REG_HL), sp));
+
+    }
     setRegister16(REG_HL, NewValue);
 }
 
@@ -759,25 +778,25 @@ void Cpu::OP_ADD_spe(uint8_t ImmediateValue)
 void Cpu::OP_RLC(uint8_t DestRegister)
 {
     uint8_t NewValue = (getRegister8(DestRegister) << 1) | (getRegister8(DestRegister) >> 7);
-    setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) >> 7);
+    setFlags(DestRegister != 7 ? NewValue == 0 : 0, 0, 0, getRegister8(DestRegister) >> 7);
     setRegister8(DestRegister, NewValue);
 }
 void Cpu::OP_RRC(uint8_t DestRegister)
 {
     uint8_t NewValue = (getRegister8(DestRegister) >> 1) | (getRegister8(DestRegister) << 7);
-    setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) & 0x1);
+    setFlags(DestRegister != 7 ? NewValue == 0 : 0, 0, 0, getRegister8(DestRegister) & 0x1);
     setRegister8(DestRegister, NewValue);
 }
 void Cpu::OP_RL(uint8_t DestRegister)
 {
     uint8_t NewValue = (getRegister8(DestRegister) << 1) | (uint8_t)getFlagC();
-    setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) >> 7);
+    setFlags(DestRegister != 7 ? NewValue == 0 : 0, 0, 0, getRegister8(DestRegister) >> 7);
     setRegister8(DestRegister, NewValue);
 }
 void Cpu::OP_RR(uint8_t DestRegister)
 {
     uint8_t NewValue = (getRegister8(DestRegister) >> 1) | (getFlagC() << 7);
-    setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) & 0x1);
+    setFlags(DestRegister != 7 ? NewValue == 0 : 0, 0, 0, getRegister8(DestRegister) & 0x1);
     setRegister8(DestRegister, NewValue);
 }
 void Cpu::OP_SLA(uint8_t DestRegister)
@@ -1001,8 +1020,8 @@ void Cpu::OP_HALT()
 }
 void Cpu::OP_STOP()
 {
-    pc++; // Ignore next value
-    // TODO Enter CPU very low power mode. Also used to switch between double and normal speed CPU modes in GBC.
+    // pc++; // Ignore next value
+    //  TODO Enter CPU very low power mode. Also used to switch between double and normal speed CPU modes in GBC.
 }
 void Cpu::OP_DI()
 {
@@ -1183,6 +1202,11 @@ bool Cpu::checkCarryAdd(uint8_t n1, uint8_t n2)
     uint16_t result = n1 + n2;
     return result > 0xFF;
 }
+bool Cpu::checkCarryAddr16(uint16_t n1, uint16_t n2)
+{
+    uint32_t result = n1 + n2;
+    return result > 0xFFFF;
+}
 bool Cpu::checkCarrySub(uint8_t n1, uint8_t n2)
 {
     // int8_t result = (int8_t)n1 - (int8_t)n2;
@@ -1192,6 +1216,10 @@ bool Cpu::checkCarrySub(uint8_t n1, uint8_t n2)
 bool Cpu::checkHalfCarryAdd(uint8_t n1, uint8_t n2)
 {
     return ((n1 & 0xF) + (n2 & 0xF)) > 0xF;
+}
+bool Cpu::checkHalfCarryAddr16(uint16_t n1, uint16_t n2)
+{
+    return ((n1 & 0xFFF) + (n2 & 0xFFF)) > 0xFFF;
 }
 bool Cpu::checkHalfCarrySub(uint8_t n1, uint8_t n2)
 {

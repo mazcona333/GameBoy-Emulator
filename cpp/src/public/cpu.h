@@ -138,8 +138,10 @@ public:
     bool getFlagC();
     void setFlagC(bool Flag);
     bool checkCarryAdd(uint8_t n1, uint8_t n2);
+    bool checkCarryAddr16(uint16_t n1, uint16_t n2);
     bool checkCarrySub(uint8_t n1, uint8_t n2);
     bool checkHalfCarryAdd(uint8_t n1, uint8_t n2);
+    bool checkHalfCarryAddr16(uint16_t n1, uint16_t n2);
     bool checkHalfCarrySub(uint8_t n1, uint8_t n2);
     void pushStack(uint16_t Value);
     uint16_t popStack();
