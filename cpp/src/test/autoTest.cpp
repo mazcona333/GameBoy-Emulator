@@ -29,23 +29,22 @@ std::string getNextTest(std::string* tests)
     return nextTest;
 }
 
-Cpu setInitialState(Cpu cpu, nlohmann::json test)
+void setInitialState(Cpu* cpu, nlohmann::json test)
 {
-    cpu.pc = test["initial"]["pc"];
-    cpu.sp = test["initial"]["sp"];
-    cpu.setRegister8(REG_A, test["initial"]["a"]);
-    cpu.setRegister8(REG_B, test["initial"]["b"]);
-    cpu.setRegister8(REG_C, test["initial"]["c"]);
-    cpu.setRegister8(REG_D, test["initial"]["d"]);
-    cpu.setRegister8(REG_E, test["initial"]["e"]);
-    cpu.registers.f = test["initial"]["f"];
-    cpu.setRegister8(REG_H, test["initial"]["h"]);
-    cpu.setRegister8(REG_L, test["initial"]["l"]);
+    cpu->pc = test["initial"]["pc"];
+    cpu->sp = test["initial"]["sp"];
+    cpu->setRegister8(REG_A, test["initial"]["a"]);
+    cpu->setRegister8(REG_B, test["initial"]["b"]);
+    cpu->setRegister8(REG_C, test["initial"]["c"]);
+    cpu->setRegister8(REG_D, test["initial"]["d"]);
+    cpu->setRegister8(REG_E, test["initial"]["e"]);
+    cpu->registers.f = test["initial"]["f"];
+    cpu->setRegister8(REG_H, test["initial"]["h"]);
+    cpu->setRegister8(REG_L, test["initial"]["l"]);
     for (size_t i = 0; i < test["initial"]["ram"].size(); i++)
     {
-        cpu.writeMemory(test["initial"]["ram"][i][0], test["initial"]["ram"][i][1]);
+        cpu->writeMemory(test["initial"]["ram"][i][0], test["initial"]["ram"][i][1]);
     }
-    return cpu;
 }
 
 bool checkFinalState(Cpu cpu, nlohmann::json test)
@@ -125,7 +124,7 @@ int main(int argc, char const *argv[])
         {
             nlohmann::json test = nlohmann::json::parse(nextTest.c_str());
             std::cout << test["name"];
-            cpu = setInitialState(cpu, test);
+            setInitialState(&cpu, test);
             cpu.ExecuteNextOP();
             passed = checkFinalState(cpu, test) && passed;
             nextTest = getNextTest(&testsString);
@@ -134,7 +133,7 @@ int main(int argc, char const *argv[])
         }
         nlohmann::json test = nlohmann::json::parse(nextTest.c_str());
         std::cout << test["name"];
-        cpu = setInitialState(cpu, test);
+        setInitialState(&cpu, test);
         cpu.ExecuteNextOP();
         passed = checkFinalState(cpu, test) && passed;
         nextTest = getNextTest(&testsString);
