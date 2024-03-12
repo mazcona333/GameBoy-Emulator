@@ -15,14 +15,17 @@ uint8_t Cpu::readMemory(uint16_t Adress)
 
 void Cpu::writeMemory(uint16_t Adress, uint8_t Value)
 {
-    if (Adress == 0xFF02 && Value == 0x81)
+    if (Adress == 0xFF02 && Value == 0x81) // SC
     {
-        std::cout << (char)readMemory(0xFF01);
+        std::cout << (char)readMemory(0xFF01); // SB
+    }
+    if(Adress == 0xFF04){ // DIV
+        Value = 0;
     }
     memory[Adress] = Value;
 }
 
-bool Cpu::loadROM(char const *filename)
+bool Cpu::loadRomToMemory(char const *filename)
 {
     std::ifstream file(filename, std::ios::binary | std::ios::in);
 
@@ -46,17 +49,147 @@ bool Cpu::loadROM(char const *filename)
     }
 }
 
-bool Cpu::loadBoot()
-{
-    return loadROM("D:\\Git\\GameBoy-Emulator\\roms\\boot\\dmg_boot.bin");
+bool Cpu::loadROM(char const *filename){
+    return loadRomToMemory(filename) && loadBoot();
 }
 
-void Cpu::Start()
+bool Cpu::loadBoot()
 {
-    // pc = 0x0213;
-    while (pc < 0xFFFF)
-    {
+    if(BootRomEnabled)
+        return loadROM("D:\\Git\\GameBoy-Emulator\\roms\\boot\\dmg_boot.bin");
+    else{
+        registers.a = 0x01;
+        registers.f = 0xB0;
+        registers.b = 0x00;
+        registers.c = 0x13;
+        registers.d = 0x00;
+        registers.e = 0xD8;
+        registers.h = 0x01;
+        registers.l = 0x4D;
+        pc = 0x100;
+        sp = 0xFFFE;
+
+        memory[0xFF00] = 0xCF;
+        memory[0xFF01] = 0x00;
+        memory[0xFF02] = 0x7E;
+        memory[0xFF04] = 0xAB;
+        memory[0xFF05] = 0x00;
+        memory[0xFF06] = 0x00;
+        memory[0xFF07] = 0xF8;
+        memory[0xFF0F] = 0xE1;
+        memory[0xFF10] = 0x80;
+        memory[0xFF11] = 0xBF;
+        memory[0xFF12] = 0xF3;
+        memory[0xFF13] = 0xFF;
+        memory[0xFF14] = 0xBF;
+        memory[0xFF16] = 0x3F;
+        memory[0xFF17] = 0x00;
+        memory[0xFF18] = 0xFF;
+        memory[0xFF19] = 0xBF;
+        memory[0xFF1A] = 0x7F;
+        memory[0xFF1B] = 0xFF;
+        memory[0xFF1C] = 0x9F;
+        memory[0xFF1D] = 0xFF;
+        memory[0xFF1E] = 0xBF;
+        memory[0xFF20] = 0xFF;
+        memory[0xFF21] = 0x00;
+        memory[0xFF22] = 0x00;
+        memory[0xFF23] = 0xBF;
+        memory[0xFF24] = 0x77;
+        memory[0xFF25] = 0xF3;
+        memory[0xFF26] = 0xF1;
+        memory[0xFF40] = 0x91;
+        memory[0xFF41] = 0x85;
+        memory[0xFF42] = 0x00;
+        memory[0xFF43] = 0x00;
+        memory[0xFF44] = 0x00;
+        memory[0xFF45] = 0x00;
+        memory[0xFF46] = 0xFF;
+        memory[0xFF47] = 0xFC;
+        //memory[0xFF48] = 0xCF;
+        //memory[0xFF49] = 0xCF;
+        memory[0xFF4A] = 0x00;
+        memory[0xFF4B] = 0x00;
+        return true;
+    }
+}
+
+void Cpu::Tick()
+{
+    CycleCounter++;
+    UpdateTimer();
+    HandleInterrupt();
+    if (RunningMode == CpuMode::Normal)
         ExecuteNextOP();
+}
+
+void Cpu::HandleInterrupt()
+{
+    if (readMemory(0xFFFF) & readMemory(0xFF0F)) // Interruption pending
+    {
+        if(ime){
+            // OP_NOP();OP_NOP();
+            pushStack(pc);
+            // Handle interrupt
+            if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x1){ // VBlank
+                pc = 0x40;
+                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11111110);
+            }else if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x2){ // LCD
+                pc = 0x48;
+                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11111101);
+            }else if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x4){ // Timer
+                pc = 0x50;
+                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11111011);
+            }else if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x8){ // Serial
+                pc = 0x48;
+                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11110111);
+            }else if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x16){ // Joypad
+                pc = 0x60;
+                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11101111);
+            }
+            ime = 0;
+        }
+        RunningMode = CpuMode::Normal; // Resume normal execution
+    }
+    else // No interruption pending
+    { 
+    }
+}
+
+void Cpu::UpdateTimer(){
+    if(CycleCounter % 64 == 0){
+        memory[0xFF04] = memory[0xFF04] + 1;
+    }
+    if(memory[0xFF07] & 0x4){
+        switch (memory[0xFF07] & 0x3)
+        {
+        case 0b00:
+            if(CycleCounter % 256 == 0){
+                memory[0xFF05] = memory[0xFF05] + 1;
+            }
+            break;
+        case 0b01:
+            if(CycleCounter % 4 == 0){
+                memory[0xFF05] = memory[0xFF05] + 1;
+            }
+            break;
+        case 0b10:
+            if(CycleCounter % 16 == 0){
+                memory[0xFF05] = memory[0xFF05] + 1;
+            }
+            break;
+        case 0b11:
+            if(CycleCounter % 64 == 0){
+                memory[0xFF05] = memory[0xFF05] + 1;
+            }
+            break;
+        default:
+            break;
+        }
+        if(memory[0xFF05] == 0){
+            memory[0xFF05] = memory[0xFF06];
+            memory[0xFF0F] = memory[0xFF0F] | 0b00000100;
+        }
     }
 }
 
@@ -64,11 +197,6 @@ void Cpu::Start()
 void Cpu::ExecuteNextOP()
 {
     uint8_t OpCode = readMemory(pc++);
-
-    if (pc == 0x100)
-    {
-        // writeMemory(0xFF01, 0);
-    }
 
     uint8_t OpCodePart1 = OpCode >> 6;
     uint8_t OpCodePart2 = (OpCode & 0b00111000) >> 3; // Read only bits 4,5,6
@@ -439,11 +567,10 @@ void Cpu::ExecuteNextOP()
         break;
     }
 
-    if(pendingEI == 2){
+    if (pendingEI == 1)
+    {
         ime = 1;
         pendingEI = 0;
-    }else if(pendingEI == 1){
-        pendingEI = 2;
     }
 }
 
@@ -627,9 +754,9 @@ void Cpu::OP_ADC(uint8_t Value)
 {
     uint8_t Result = getRegister8(REG_A) + Value + getFlagC();
 
-    setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value) || checkHalfCarryAdd(getRegister8(REG_A) + Value, getFlagC()), 
-                            checkCarryAdd(getRegister8(REG_A), Value) || checkCarryAdd(getRegister8(REG_A) + Value, getFlagC()));
-    
+    setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value) || checkHalfCarryAdd(getRegister8(REG_A) + Value, getFlagC()),
+             checkCarryAdd(getRegister8(REG_A), Value) || checkCarryAdd(getRegister8(REG_A) + Value, getFlagC()));
+
     setRegister8(REG_A, Result);
 }
 void Cpu::OP_SUB(uint8_t Value)
@@ -644,9 +771,9 @@ void Cpu::OP_SBC(uint8_t Value)
 {
     uint8_t Result = getRegister8(REG_A) - Value - getFlagC();
 
-    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value) || checkHalfCarrySub(getRegister8(REG_A) - Value, getFlagC()), 
-                            checkCarrySub(getRegister8(REG_A), Value ) || checkCarrySub(getRegister8(REG_A) - Value, getFlagC()));
-    
+    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value) || checkHalfCarrySub(getRegister8(REG_A) - Value, getFlagC()),
+             checkCarrySub(getRegister8(REG_A), Value) || checkCarrySub(getRegister8(REG_A) - Value, getFlagC()));
+
     setRegister8(REG_A, Result);
 }
 void Cpu::OP_AND(uint8_t Value)
@@ -763,10 +890,11 @@ void Cpu::OP_ADD_hlr16(uint8_t SourceRegister)
     {
         NewValue = getRegister16(REG_HL) + getRegister16(SourceRegister);
         setFlags(getFlagZ(), 0, checkHalfCarryAddr16(getRegister16(REG_HL), getRegister16(SourceRegister)), checkCarryAddr16(getRegister16(REG_HL), getRegister16(SourceRegister)));
-    }else{
+    }
+    else
+    {
         NewValue = getRegister16(REG_HL) + sp;
         setFlags(getFlagZ(), 0, checkHalfCarryAddr16(getRegister16(REG_HL), sp), checkCarryAddr16(getRegister16(REG_HL), sp));
-
     }
     setRegister16(REG_HL, NewValue);
 }
@@ -1017,7 +1145,7 @@ void Cpu::OP_RET_cc(uint8_t Condition)
 void Cpu::OP_RETI()
 {
     pc = popStack();
-    pendingEI = 1;
+    ime = 1;
 }
 void Cpu::OP_RST(uint8_t Vector)
 {
@@ -1028,31 +1156,34 @@ void Cpu::OP_RST(uint8_t Vector)
 
 void Cpu::OP_HALT()
 {
+    // TODO HALT Bug
     if (ime)
     {
-        // TODO Low-Power until after an interrupt is about to be serviced. The handler is executed normally, and the CPU resumes execution after the HALT when that returns.
+        // Low-Power until after an interrupt is about to be serviced. The handler is executed normally, and the CPU resumes execution after the HALT when that returns.
     }
     else
     {
-        if (readMemory(0xFFFF) & readMemory(0xFF0F))
+        if (readMemory(0xFFFF) & readMemory(0xFF0F)) // Interruption pending
         {
-            // TODO As soon as an interrupt becomes pending, the CPU resumes execution. This is like the above, except that the handler is not called.
+            // The CPU continues execution after the HALT, but the byte after it is read twice in a row (PC is not incremented, due to a hardware bug).
         }
         else
         { // No interruption pending
-          // TODO The CPU continues execution after the HALT, but the byte after it is read twice in a row (PC is not incremented, due to a hardware bug).
+            // As soon as an interrupt becomes pending, the CPU resumes execution. This is like the above, except that the handler is not called.
+            
         }
     }
+    RunningMode = CpuMode::Low;
 }
 void Cpu::OP_STOP()
 {
     // pc++; // Ignore next value
     //  TODO Enter CPU very low power mode. Also used to switch between double and normal speed CPU modes in GBC.
+    writeMemory(0xFF04, 0);
 }
 void Cpu::OP_DI()
 {
     ime = 0;
-    pendingEI = 0;
 }
 void Cpu::OP_EI()
 {

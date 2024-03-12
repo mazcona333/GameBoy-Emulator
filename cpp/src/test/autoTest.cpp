@@ -131,7 +131,7 @@ bool test(Cpu *cpu, std::string testsString)
         nlohmann::json test = nlohmann::json::parse(nextTest.c_str());
         std::cout << test["name"];
         setInitialState(cpu, test);
-        cpu->ExecuteNextOP();
+        cpu->FetchNextOP();
         passed = checkFinalState(cpu, test) && passed;
         nextTest = getNextTest(&testsString);
         if (!passed)
@@ -141,7 +141,7 @@ bool test(Cpu *cpu, std::string testsString)
     nlohmann::json test = nlohmann::json::parse(nextTest.c_str());
     std::cout << test["name"];
     setInitialState(cpu, test);
-    cpu->ExecuteNextOP();
+    cpu->FetchNextOP();
     passed = checkFinalState(cpu, test) && passed;
     nextTest = getNextTest(&testsString);
     return passed;

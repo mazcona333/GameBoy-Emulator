@@ -3,9 +3,9 @@
 
 
 void testCpuInstr(){
-    Cpu* cpu = new Cpu();
+    Gba* gba = new Gba();
     // bool correct = cpu->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\01-special.gb");
-    bool correct = cpu->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\02-interrupts.gb"); // Failed EI
+    bool correct = gba->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\02-interrupts.gb"); // Failed EI
     // bool correct = cpu->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\03-op sp,hl.gb");
     // bool correct = cpu->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\04-op r,imm.gb");
     // bool correct = cpu->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\05-op rp.gb");
@@ -17,16 +17,9 @@ void testCpuInstr(){
     // bool correct = cpu->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\11-op a,(hl).gb");
     if (correct)
     {
-        //correct = cpu.loadBoot();
-        correct = true;
-        cpu->pc = 0x100;
-        cpu->sp = 0xFFFE;
-        if (correct)
-        {
-            cpu->Start();
-        }
+        gba->Start();
     }
-    delete cpu;
+    delete gba;
 }
 
 int main(int argc, char const *argv[])

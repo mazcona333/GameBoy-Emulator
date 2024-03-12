@@ -26,8 +26,17 @@ class Cpu
 {
 public:
     Cpu();
+    void Tick();
+    bool loadROM(char const *filename);
+private:
+    bool BootRomEnabled = 0;
 
-public:
+    enum CpuMode { Normal, Low, VeryLow };
+
+    CpuMode RunningMode = Normal;
+
+    uint8_t CycleCounter = 0;
+
     struct
     {
         uint8_t a = 0;
@@ -47,13 +56,14 @@ public:
 
     uint8_t readMemory(uint16_t Adress);
     void writeMemory(uint16_t Adress, uint8_t Value);
-
-    bool loadROM(char const *filename);
+    
+    bool loadRomToMemory(char const *filename);
     bool loadBoot();
-    void Start();
 
     void ExecuteNextOP();
     void ExecutePrefixedOP();
+    void HandleInterrupt();
+    void UpdateTimer();
 
     void OP_NOP();
     void OP_LD_r8imm8(uint8_t DestRegister, uint8_t ImmediateValue);

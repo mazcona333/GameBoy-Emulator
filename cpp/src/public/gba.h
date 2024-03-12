@@ -7,9 +7,10 @@ class Gba
 {
 public:
     Gba();
-
+    bool loadROM(char const *filename);
+    void Start();
 private:
-    Cpu cpu;
+    Cpu* cpu;
 };
 
 #endif // GBA_H
