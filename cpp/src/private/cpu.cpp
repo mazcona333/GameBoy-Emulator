@@ -243,11 +243,11 @@ void Cpu::FetchNextOP()
             {
                 if (OpCodePart2 == 3)
                 {
-                    OP_JR(readMemory(pc++));
+                    OP_JR();
                 }
                 else
                 {
-                    OP_JR_cc(readMemory(pc++), OpCodePart2 - 4);
+                    OP_JR_cc(OpCodePart2 - 4);
                 }
             }
             else
@@ -258,8 +258,7 @@ void Cpu::FetchNextOP()
                     OP_NOP();
                     break;
                 case 1:
-                    OP_LD_imm16sp(combineuint8(readMemory(pc), readMemory(pc + 1)));
-                    pc += 2;
+                    OP_LD_imm16sp();
                     break;
                 case 2:
                     OP_STOP();
@@ -273,7 +272,7 @@ void Cpu::FetchNextOP()
                 OP_ADD_hlr16(OpCodePart2);
             else
             {
-                OP_LD_r16imm16(OpCodePart2, combineuint8(readMemory(pc), readMemory(pc + 1)));
+                OP_LD_r16imm16(OpCodePart2);
                 pc += 2;
             }
             break;
@@ -351,28 +350,28 @@ void Cpu::FetchNextOP()
         switch (OpCodePart2)
         {
         case 0:
-            OP_ADD(getRegister8(OpCodePart3));
+            OP_ADD(OpCodePart3);
             break;
         case 1:
-            OP_ADC(getRegister8(OpCodePart3));
+            OP_ADC(OpCodePart3);
             break;
         case 2:
-            OP_SUB(getRegister8(OpCodePart3));
+            OP_SUB(OpCodePart3);
             break;
         case 3:
-            OP_SBC(getRegister8(OpCodePart3));
+            OP_SBC(OpCodePart3);
             break;
         case 4:
-            OP_AND(getRegister8(OpCodePart3));
+            OP_AND(OpCodePart3);
             break;
         case 5:
-            OP_XOR(getRegister8(OpCodePart3));
+            OP_XOR(OpCodePart3);
             break;
         case 6:
-            OP_OR(getRegister8(OpCodePart3));
+            OP_OR(OpCodePart3);
             break;
         case 7:
-            OP_CP(getRegister8(OpCodePart3));
+            OP_CP(OpCodePart3);
             break;
 
         default:
@@ -399,16 +398,16 @@ void Cpu::FetchNextOP()
                 OP_RET_cc(3);
                 break;
             case 4:
-                OP_LD_imm8memra(readMemory(pc++));
+                OP_LD_imm8memra();
                 break;
             case 5:
-                OP_ADD_spe(readMemory(pc++));
+                OP_ADD_spe();
                 break;
             case 6:
-                OP_LD_raimm8mem(readMemory(pc++));
+                OP_LD_raimm8mem();
                 break;
             case 7:
-                OP_LD_hlspimm8(readMemory(pc++));
+                OP_LD_hlspimm8();
                 break;
             default:
                 break;
@@ -446,26 +445,26 @@ void Cpu::FetchNextOP()
             switch (OpCodePart2)
             {
             case 0:
-                OP_JP_cc(combineuint8(readMemory(pc), readMemory(pc + 1)), 0);
+                OP_JP_cc(0);
                 break;
             case 1:
-                OP_JP_cc(combineuint8(readMemory(pc), readMemory(pc + 1)), 1);
+                OP_JP_cc(1);
                 break;
             case 2:
-                OP_JP_cc(combineuint8(readMemory(pc), readMemory(pc + 1)), 2);
+                OP_JP_cc(2);
                 break;
             case 3:
-                OP_JP_cc(combineuint8(readMemory(pc), readMemory(pc + 1)), 3);
+                OP_JP_cc(3);
                 break;
             case 4:
-                OP_LD_imm8memra(getRegister8(REG_C));
+                OP_LDH_rcmemra();
                 break;
             case 5:
-                OP_LD_imm16memra(combineuint8(readMemory(pc), readMemory(pc + 1)));
+                OP_LD_imm16memra();
                 pc += 2;
                 break;
             case 6:
-                OP_LD_raimm8mem(getRegister8(REG_C));
+                OP_LD_raimm8mem();
                 break;
             case 7:
                 OP_LD_raimm16mem();
@@ -484,7 +483,7 @@ void Cpu::FetchNextOP()
                 switch (OpCodePart2)
                 {
                 case 0:
-                    OP_JP_imm16(combineuint8(readMemory(pc), readMemory(pc + 1)));
+                    OP_JP_imm16();
                     break;
                 case 1:
                     ExecutePrefixedOP();
@@ -503,7 +502,7 @@ void Cpu::FetchNextOP()
         case 4:
             if (OpCodePart2 <= 3)
             {
-                OP_CALL_cc(combineuint8(readMemory(pc), readMemory(pc + 1)), OpCodePart2);
+                OP_CALL_cc(OpCodePart2);
             }
             else
             {
@@ -515,7 +514,7 @@ void Cpu::FetchNextOP()
             {
                 if (OpCodePart2 == 1)
                 {
-                    OP_CALL(combineuint8(readMemory(pc), readMemory(pc + 1)));
+                    OP_CALL();
                 }
                 else
                 {
@@ -531,28 +530,28 @@ void Cpu::FetchNextOP()
             switch (OpCodePart2)
             {
             case 0:
-                OP_ADD(readMemory(pc++));
+                OP_ADD_imm();
                 break;
             case 1:
-                OP_ADC(readMemory(pc++));
+                OP_ADC_imm();
                 break;
             case 2:
-                OP_SUB(readMemory(pc++));
+                OP_SUB_imm();
                 break;
             case 3:
-                OP_SBC(readMemory(pc++));
+                OP_SBC_imm();
                 break;
             case 4:
-                OP_AND(readMemory(pc++));
+                OP_AND_imm();
                 break;
             case 5:
-                OP_XOR(readMemory(pc++));
+                OP_XOR_imm();
                 break;
             case 6:
-                OP_OR(readMemory(pc++));
+                OP_OR_imm();
                 break;
             case 7:
-                OP_CP(readMemory(pc++));
+                OP_CP_imm();
                 break;
             }
             break;
@@ -669,7 +668,7 @@ void Cpu::OP_LD_r8imm8(uint8_t DestRegister)
     // setRegister8(DestRegister, ImmediateValue);
 
     PendingInstructions.push([this]
-                             { Z = readMemory(pc++); });
+                             { Z = readMemory(pc); pc++; });
     if (DestRegister == 6)
     {
         PendingInstructions.push([] {});
@@ -703,7 +702,7 @@ void Cpu::OP_LD_r8r8(uint8_t DestRegister, uint8_t SourceRegister)
 
 void Cpu::OP_LD_rar16mem(uint8_t SourceRegister)
 {
-    uint8_t SourceRegisterContent;
+    // uint8_t SourceRegisterContent;
     if (SourceRegister <= 3)
     {
         // SourceRegisterContent = readMemory(getRegister16(SourceRegister));
@@ -782,52 +781,106 @@ void Cpu::OP_LD_raimm16mem()
     PendingInstructions.push([this]
                              { W =  readMemory(pc); pc++; });
     PendingInstructions.push([this]
-                             { Z =  combineuint8(Z, W); });
+                             { Z = readMemory(combineuint8(Z, W)); });
     PendingInstructions.push([this]
                              { setRegister8(REG_A, Z); });
-
-    
 }
 
-void Cpu::OP_LD_raimm8mem(uint8_t MemoryAddressLower)
+void Cpu::OP_LD_raimm8mem()
 {
-    OP_LD_raimm16mem(combineuint8(MemoryAddressLower, 0xFF));
+    // OP_LD_raimm16mem(combineuint8(MemoryAddressLower, 0xFF));
+
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { Z = readMemory(combineuint8(Z, 0xFF)); });
+    PendingInstructions.push([this]
+                             { setRegister8(REG_A, Z); });
 }
 
-void Cpu::OP_LD_imm16memra(uint16_t MemoryAddress)
+void Cpu::OP_LD_imm16memra()
 {
-    writeMemory(MemoryAddress, getRegister8(REG_A));
+    // writeMemory(MemoryAddress, getRegister8(REG_A));
+
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { W =  readMemory(pc); pc++; });
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this]
+                             { writeMemory(combineuint8(Z, W), getRegister8(REG_A)); });
 }
 
-void Cpu::OP_LD_imm8memra(uint8_t MemoryAddressLower)
+void Cpu::OP_LD_imm8memra()
 {
-    OP_LD_imm16memra(combineuint8(MemoryAddressLower, 0xFF));
+    // OP_LD_imm16memra(combineuint8(MemoryAddressLower, 0xFF));
+
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this]
+                             { writeMemory(combineuint8(Z, 0xFF), getRegister8(REG_A)); });
 }
 
-void Cpu::OP_LD_r16imm16(uint8_t DestRegister, uint16_t ImmediateValue)
+void Cpu::OP_LDH_rcmemra()
 {
+    // OP_LD_imm16memra(combineuint8(MemoryAddressLower, 0xFF));
+
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this]
+                             { writeMemory(combineuint8(getRegister8(REG_C), 0xFF), getRegister8(REG_A)); });
+}
+
+void Cpu::OP_LD_r16imm16(uint8_t DestRegister)
+{
+
+    // setRegister16(DestRegister, ImmediateValue);
+
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { W =  readMemory(pc); pc++; });
     if (DestRegister >= 6)
-        sp = ImmediateValue;
+        PendingInstructions.push([this]
+                                 { sp = combineuint8(Z, W); });
     else
-        setRegister16(DestRegister, ImmediateValue);
+        PendingInstructions.push([this, DestRegister]
+                                 { setRegister16(DestRegister, combineuint8(Z, W)); });
 }
 
-void Cpu::OP_LD_imm16sp(uint16_t MemoryAddress)
+void Cpu::OP_LD_imm16sp()
 {
+
     uint8_t Low;
     uint8_t High;
     splituint16(sp, &Low, &High);
-    writeMemory(MemoryAddress, Low);
-    writeMemory(MemoryAddress + 1, High);
+    // writeMemory(MemoryAddress, Low);
+    // writeMemory(MemoryAddress + 1, High);
+
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { W =  readMemory(pc); pc++; });
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this, Low]
+                             { writeMemory(combineuint8(Z, W), Low); });
+    PendingInstructions.push([this, High]
+                             { writeMemory(combineuint8(Z, W) + 1, High); });
+
+    // combineuint8(readMemory(pc), readMemory(pc + 1))
 }
 
 void Cpu::OP_LD_sphl()
 {
-    sp = getRegister16(REG_HL);
+    // sp = getRegister16(REG_HL);
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this]
+                             { sp = getRegister16(REG_HL); });
 }
 
-void Cpu::OP_LD_hlspimm8(uint8_t ImmediateValue)
+void Cpu::OP_LD_hlspimm8()
 {
+    /*
     uint16_t NewValue = sp + (int8_t)ImmediateValue;
 
     uint8_t Low;
@@ -839,161 +892,519 @@ void Cpu::OP_LD_hlspimm8(uint8_t ImmediateValue)
 
     setFlags(0, 0, HalfCarry, Carry);
     setRegister16(REG_HL, NewValue);
+    */
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint8_t Low;
+                                uint8_t High;
+                                splituint16(sp, &Low, &High);
+
+                                bool HalfCarry = checkHalfCarryAdd(Low, (int8_t)Z);
+                                bool Carry = checkCarryAdd(Low, (int8_t)Z);
+
+                                setFlags(0, 0, HalfCarry, Carry);
+
+                                uint16_t NewValue = sp + (int8_t)Z;
+                                splituint16(NewValue, &Low, &High);
+
+                                setRegister8(REG_L, Low); });
+    PendingInstructions.push([this]
+                             {  uint8_t Low;
+                                uint8_t High;
+                                uint16_t NewValue = sp + (int8_t)Z;
+                                splituint16(NewValue, &Low, &High);
+
+                                setRegister8(REG_H, High); });
 }
 
 void Cpu::OP_PUSH_r16(uint8_t SourceRegister)
 {
-    pushStack(getRegister16(SourceRegister));
+    // pushStack(getRegister16(SourceRegister));
+
+    uint8_t Low;
+    uint8_t High;
+    splituint16(getRegister16(SourceRegister), &Low, &High);
+
+    PendingInstructions.push([this]
+                             { sp--; });
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this, High]
+                             { writeMemory(sp, High); sp--; });
+    PendingInstructions.push([this, Low]
+                             { writeMemory(sp, Low); });
 }
 
 void Cpu::OP_POP_r16(uint8_t DestRegister)
 {
-    setRegister16(DestRegister, popStack());
+    // setRegister16(DestRegister, popStack());
+
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { W =  readMemory(pc); pc++; });
+    PendingInstructions.push([this, DestRegister]
+                             { setRegister16(DestRegister, combineuint8(Z, W)); });
 }
 
-void Cpu::OP_ADD(uint8_t Value)
+void Cpu::OP_ADD(uint8_t SourceRegister)
 {
+    /*
     uint8_t Result = getRegister8(REG_A) + Value;
 
     setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value), checkCarryAdd(getRegister8(REG_A), Value));
 
     setRegister8(REG_A, Result);
+    */
+    if (SourceRegister != 6)
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 {  uint8_t Value = getRegister8(SourceRegister);
+                                    uint8_t Result = getRegister8(REG_A) + Value;
+                                    setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value), checkCarryAdd(getRegister8(REG_A), Value));
+                                    setRegister8(REG_A, Result); });
+    }
+    else
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = getRegister8(SourceRegister); });
+        PendingInstructions.push([this]
+                                 {  uint8_t Result = getRegister8(REG_A) + Z;
+                                    setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Z), checkCarryAdd(getRegister8(REG_A), Z));
+                                    setRegister8(REG_A, Result); });
+    }
 }
-void Cpu::OP_ADC(uint8_t Value)
+void Cpu::OP_ADD_imm()
 {
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint8_t Result = getRegister8(REG_A) + Z;
+                                setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Z), checkCarryAdd(getRegister8(REG_A), Z));
+                                setRegister8(REG_A, Result); });
+}
+void Cpu::OP_ADC(uint8_t SourceRegister)
+{
+    /*
     uint8_t Result = getRegister8(REG_A) + Value + getFlagC();
 
     setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value) || checkHalfCarryAdd(getRegister8(REG_A) + Value, getFlagC()),
              checkCarryAdd(getRegister8(REG_A), Value) || checkCarryAdd(getRegister8(REG_A) + Value, getFlagC()));
 
     setRegister8(REG_A, Result);
+    */
+
+    if (SourceRegister != 6)
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 {  uint8_t Value = getRegister8(SourceRegister);
+                                    uint8_t Result = getRegister8(REG_A) + Value + getFlagC();
+                                    setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value) || checkHalfCarryAdd(getRegister8(REG_A) + Value, getFlagC()),
+                                            checkCarryAdd(getRegister8(REG_A), Value) || checkCarryAdd(getRegister8(REG_A) + Value, getFlagC()));
+                                    setRegister8(REG_A, Result); });
+    }
+    else
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = getRegister8(SourceRegister); });
+        PendingInstructions.push([this]
+                                 {  uint8_t Value = Z;
+                                    uint8_t Result = getRegister8(REG_A) + Value + getFlagC();
+                                    setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value) || checkHalfCarryAdd(getRegister8(REG_A) + Value, getFlagC()),
+                                            checkCarryAdd(getRegister8(REG_A), Value) || checkCarryAdd(getRegister8(REG_A) + Value, getFlagC()));
+                                    setRegister8(REG_A, Result); });
+    }
 }
-void Cpu::OP_SUB(uint8_t Value)
+void Cpu::OP_ADC_imm()
 {
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint8_t Value = Z;
+                                uint8_t Result = getRegister8(REG_A) + Value + getFlagC();
+                                setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value) || checkHalfCarryAdd(getRegister8(REG_A) + Value, getFlagC()),
+                                        checkCarryAdd(getRegister8(REG_A), Value) || checkCarryAdd(getRegister8(REG_A) + Value, getFlagC()));
+                                setRegister8(REG_A, Result); });
+}
+void Cpu::OP_SUB(uint8_t SourceRegister)
+{
+    /*
     uint8_t Result = getRegister8(REG_A) - Value;
 
     setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value), checkCarrySub(getRegister8(REG_A), Value));
 
     setRegister8(REG_A, Result);
+    */
+
+    if (SourceRegister != 6)
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 {  uint8_t Value = getRegister8(SourceRegister);
+                                    uint8_t Result = getRegister8(REG_A) - Value;
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value), checkCarrySub(getRegister8(REG_A), Value));
+                                    setRegister8(REG_A, Result); });
+    }
+    else
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = getRegister8(SourceRegister); });
+        PendingInstructions.push([this]
+                                 {  uint8_t Value = Z;
+                                    uint8_t Result = getRegister8(REG_A) - Value;
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value), checkCarrySub(getRegister8(REG_A), Value));
+                                    setRegister8(REG_A, Result); });
+    }
 }
-void Cpu::OP_SBC(uint8_t Value)
+void Cpu::OP_SUB_imm()
 {
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint8_t Value = Z;
+                                uint8_t Result = getRegister8(REG_A) - Value;
+                                setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value), checkCarrySub(getRegister8(REG_A), Value));
+                                setRegister8(REG_A, Result); });
+}
+void Cpu::OP_SBC(uint8_t SourceRegister)
+{
+    /*
     uint8_t Result = getRegister8(REG_A) - Value - getFlagC();
 
     setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value) || checkHalfCarrySub(getRegister8(REG_A) - Value, getFlagC()),
              checkCarrySub(getRegister8(REG_A), Value) || checkCarrySub(getRegister8(REG_A) - Value, getFlagC()));
 
     setRegister8(REG_A, Result);
+    */
+
+    if (SourceRegister != 6)
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 {  uint8_t Value = getRegister8(SourceRegister);
+                                    uint8_t Result = getRegister8(REG_A) - Value - getFlagC();
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value) || checkHalfCarrySub(getRegister8(REG_A) - Value, getFlagC()),
+                                        checkCarrySub(getRegister8(REG_A), Value) || checkCarrySub(getRegister8(REG_A) - Value, getFlagC()));
+                                    setRegister8(REG_A, Result); });
+    }
+    else
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = getRegister8(SourceRegister); });
+        PendingInstructions.push([this]
+                                 {  uint8_t Value = Z;
+                                    uint8_t Result = getRegister8(REG_A) - Value - getFlagC();
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value) || checkHalfCarrySub(getRegister8(REG_A) - Value, getFlagC()),
+                                        checkCarrySub(getRegister8(REG_A), Value) || checkCarrySub(getRegister8(REG_A) - Value, getFlagC()));
+                                    setRegister8(REG_A, Result); });
+    }
 }
-void Cpu::OP_AND(uint8_t Value)
+void Cpu::OP_SBC_imm()
 {
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint8_t Value = Z;
+                                uint8_t Result = getRegister8(REG_A) - Value - getFlagC();
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value) || checkHalfCarrySub(getRegister8(REG_A) - Value, getFlagC()),
+                                        checkCarrySub(getRegister8(REG_A), Value) || checkCarrySub(getRegister8(REG_A) - Value, getFlagC()));
+                                    setRegister8(REG_A, Result); });
+}
+void Cpu::OP_AND(uint8_t SourceRegister)
+{
+    /*
     uint8_t Result = getRegister8(REG_A) & Value;
 
     setFlags(Result == 0, 0, 1, 0);
 
     setRegister8(REG_A, Result);
+    */
+
+    if (SourceRegister != 6)
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 {  uint8_t Value = getRegister8(SourceRegister);
+                                    uint8_t Result = getRegister8(REG_A) & Value;
+                                    setFlags(Result == 0, 0, 1, 0);
+                                    setRegister8(REG_A, Result); });
+    }
+    else
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = getRegister8(SourceRegister); });
+        PendingInstructions.push([this]
+                                 {  uint8_t Value = Z;
+                                    uint8_t Result = getRegister8(REG_A) & Value;
+                                    setFlags(Result == 0, 0, 1, 0);
+                                    setRegister8(REG_A, Result); });
+    }
 }
-void Cpu::OP_XOR(uint8_t Value)
+void Cpu::OP_AND_imm()
 {
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint8_t Value = Z;
+                                uint8_t Result = getRegister8(REG_A) & Value;
+                                setFlags(Result == 0, 0, 1, 0);
+                                setRegister8(REG_A, Result); });
+}
+void Cpu::OP_XOR(uint8_t SourceRegister)
+{
+    /*
     uint8_t Result = getRegister8(REG_A) ^ Value;
 
     setFlags(Result == 0, 0, 0, 0);
 
     setRegister8(REG_A, Result);
+    */
+
+    if (SourceRegister != 6)
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 {  uint8_t Value = getRegister8(SourceRegister);
+                                    uint8_t Result = getRegister8(REG_A) ^ Value;
+                                    setFlags(Result == 0, 0, 0, 0);
+                                    setRegister8(REG_A, Result); });
+    }
+    else
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = getRegister8(SourceRegister); });
+        PendingInstructions.push([this]
+                                 {  uint8_t Value = Z;
+                                    uint8_t Result = getRegister8(REG_A) ^ Value;
+                                    setFlags(Result == 0, 0, 0, 0);
+                                    setRegister8(REG_A, Result); });
+    }
 }
-void Cpu::OP_OR(uint8_t Value)
+void Cpu::OP_XOR_imm()
 {
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint8_t Value = Z;
+                                uint8_t Result = getRegister8(REG_A) ^ Value;
+                                    setFlags(Result == 0, 0, 0, 0);
+                                    setRegister8(REG_A, Result); });
+}
+void Cpu::OP_OR(uint8_t SourceRegister)
+{
+    /*
     uint8_t Result = getRegister8(REG_A) | Value;
 
     setFlags(Result == 0, 0, 0, 0);
 
     setRegister8(REG_A, Result);
+    */
+
+    if (SourceRegister != 6)
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 {  uint8_t Value = getRegister8(SourceRegister);
+                                    uint8_t Result = getRegister8(REG_A) | Value;
+                                    setFlags(Result == 0, 0, 0, 0);
+                                    setRegister8(REG_A, Result); });
+    }
+    else
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = getRegister8(SourceRegister); });
+        PendingInstructions.push([this]
+                                 {  uint8_t Value = Z;
+                                    uint8_t Result = getRegister8(REG_A) | Value;
+                                    setFlags(Result == 0, 0, 0, 0);
+                                    setRegister8(REG_A, Result); });
+    }
 }
-void Cpu::OP_CP(uint8_t Value)
+void Cpu::OP_OR_imm()
 {
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint8_t Value = Z;
+                                uint8_t Result = getRegister8(REG_A) | Value;
+                                setFlags(Result == 0, 0, 0, 0);
+                                setRegister8(REG_A, Result); });
+}
+void Cpu::OP_CP(uint8_t SourceRegister)
+{
+    /*
     uint8_t Result = getRegister8(REG_A) - Value;
 
     setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value), checkCarrySub(getRegister8(REG_A), Value));
+    */
+
+    if (SourceRegister != 6)
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 {  uint8_t Value = getRegister8(SourceRegister);
+                                    uint8_t Result = getRegister8(REG_A) - Value;
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value), checkCarrySub(getRegister8(REG_A), Value)); });
+    }
+    else
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = getRegister8(SourceRegister); });
+        PendingInstructions.push([this]
+                                 {  uint8_t Value = Z;
+                                    uint8_t Result = getRegister8(REG_A) - Value;
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value), checkCarrySub(getRegister8(REG_A), Value)); });
+    }
+}
+void Cpu::OP_CP_imm()
+{
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint8_t Value = Z;
+                                uint8_t Result = getRegister8(REG_A) - Value;
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value), checkCarrySub(getRegister8(REG_A), Value)); });
 }
 void Cpu::OP_INC(uint8_t DestRegister)
 {
+    /*
     uint8_t Result = getRegister8(DestRegister) + 1;
 
     setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(DestRegister), 1), getFlagC());
 
     setRegister8(DestRegister, Result);
+    */
+
+    if (DestRegister != 6)
+    {
+        PendingInstructions.push([this, DestRegister]
+                                 {  uint8_t Result = getRegister8(DestRegister) + 1;
+                                    setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(DestRegister), 1), getFlagC());
+                                    setRegister8(DestRegister, Result); });
+    }
+    else
+    {
+        PendingInstructions.push([this, DestRegister]
+                                 { Z = getRegister8(DestRegister); });
+        PendingInstructions.push([] {});
+        PendingInstructions.push([this, DestRegister]
+                                 {  uint8_t Result = Z + 1;
+                                    setFlags(Result == 0, 0, checkHalfCarryAdd(Z, 1), getFlagC());
+                                    setRegister8(DestRegister, Result); });
+    }
 }
 void Cpu::OP_DEC(uint8_t DestRegister)
 {
+    /*
     uint8_t Result = getRegister8(DestRegister) - 1;
 
     setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(DestRegister), 1), getFlagC());
 
     setRegister8(DestRegister, Result);
+    */
+
+    if (DestRegister != 6)
+    {
+        PendingInstructions.push([this, DestRegister]
+                                 {  uint8_t Result = getRegister8(DestRegister) - 1;
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(DestRegister), 1), getFlagC());
+                                    setRegister8(DestRegister, Result); });
+    }
+    else
+    {
+        PendingInstructions.push([this, DestRegister]
+                                 { Z = getRegister8(DestRegister); });
+        PendingInstructions.push([] {});
+        PendingInstructions.push([this, DestRegister]
+                                 {  uint8_t Result = Z - 1;
+                                    setFlags(Result == 0, 1, checkHalfCarrySub(Z, 1), getFlagC());
+                                    setRegister8(DestRegister, Result); });
+    }
 }
 
 void Cpu::OP_CCF()
 {
-    setFlags(getFlagZ(), 0, 0, !getFlagC());
+    // setFlags(getFlagZ(), 0, 0, !getFlagC());
+    PendingInstructions.push([this]
+                             { setFlags(getFlagZ(), 0, 0, !getFlagC()); });
 }
 void Cpu::OP_SCF()
 {
-    setFlags(getFlagZ(), 0, 0, 1);
+    // setFlags(getFlagZ(), 0, 0, 1);
+    PendingInstructions.push([this]
+                             { setFlags(getFlagZ(), 0, 0, 1); });
 }
 void Cpu::OP_DAA()
 {
-    if (!getFlagN())
-    {
-        if (getFlagC() || getRegister8(REG_A) > 0x99)
-        {
-            setRegister8(REG_A, getRegister8(REG_A) + 0x60);
-            setFlagC(1);
-        }
-        if (getFlagH() || (getRegister8(REG_A) & 0xF) > 0x09)
-        {
-            setRegister8(REG_A, getRegister8(REG_A) + 0x6);
-        }
-    }
-    else
-    {
-        if (getFlagC())
-        {
-            setRegister8(REG_A, getRegister8(REG_A) - 0x60);
-            setFlagC(1);
-        }
-        if (getFlagH())
-        {
-            setRegister8(REG_A, getRegister8(REG_A) - 0x6);
-        }
-    }
+    PendingInstructions.push([this]
+                             {  if (!getFlagN())
+                                    {
+                                        if (getFlagC() || getRegister8(REG_A) > 0x99)
+                                        {
+                                            setRegister8(REG_A, getRegister8(REG_A) + 0x60);
+                                            setFlagC(1);
+                                        }
+                                        if (getFlagH() || (getRegister8(REG_A) & 0xF) > 0x09)
+                                        {
+                                            setRegister8(REG_A, getRegister8(REG_A) + 0x6);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (getFlagC())
+                                        {
+                                            setRegister8(REG_A, getRegister8(REG_A) - 0x60);
+                                            setFlagC(1);
+                                        }
+                                        if (getFlagH())
+                                        {
+                                            setRegister8(REG_A, getRegister8(REG_A) - 0x6);
+                                        }
+                                    }
 
-    setFlagZ(getRegister8(REG_A) == 0);
-    setFlagH(0);
+                                    setFlagZ(getRegister8(REG_A) == 0);
+                                    setFlagH(0); });
 }
 void Cpu::OP_CPL()
 {
-    setRegister8(REG_A, ~getRegister8(REG_A));
-    setFlags(getFlagZ(), 1, 1, getFlagC());
+    // setRegister8(REG_A, ~getRegister8(REG_A));
+    // setFlags(getFlagZ(), 1, 1, getFlagC());
+    PendingInstructions.push([this]
+                             {  setRegister8(REG_A, ~getRegister8(REG_A));
+                                setFlags(getFlagZ(), 1, 1, getFlagC()); });
 }
 
 void Cpu::OP_INC_r16(uint8_t DestRegister)
 {
+    /*
     if (DestRegister < 6)
         setRegister16(DestRegister, getRegister16(DestRegister) + 1);
     else
         sp++;
+    */
+    PendingInstructions.push([] {});
+    if (DestRegister < 6)
+        PendingInstructions.push([this, DestRegister]
+                                 { setRegister16(DestRegister, getRegister16(DestRegister) + 1); });
+    else
+        PendingInstructions.push([this]
+                                 { sp++; });
 }
 
 void Cpu::OP_DEC_r16(uint8_t DestRegister)
 {
+    /*
     if (DestRegister < 6)
         setRegister16(DestRegister, getRegister16(DestRegister) - 1);
     else
         sp--;
+    */
+    PendingInstructions.push([] {});
+    if (DestRegister < 6)
+        PendingInstructions.push([this, DestRegister]
+                                 { setRegister16(DestRegister, getRegister16(DestRegister) - 1); });
+    else
+        PendingInstructions.push([this]
+                                 { sp--; });
 }
 
 void Cpu::OP_ADD_hlr16(uint8_t SourceRegister)
 {
+    /*
     uint16_t NewValue;
     if (SourceRegister < 6)
     {
@@ -1006,10 +1417,35 @@ void Cpu::OP_ADD_hlr16(uint8_t SourceRegister)
         setFlags(getFlagZ(), 0, checkHalfCarryAddr16(getRegister16(REG_HL), sp), checkCarryAddr16(getRegister16(REG_HL), sp));
     }
     setRegister16(REG_HL, NewValue);
+    */
+    uint16_t AddValue;
+    if (SourceRegister < 6)
+    {
+        AddValue = getRegister16(SourceRegister);
+    }
+    else
+    {
+        AddValue = sp;
+    }
+    PendingInstructions.push([this, AddValue]
+                             {  uint16_t NewValue = getRegister16(REG_HL) + AddValue;
+                                //setFlags(getFlagZ(), 0, checkHalfCarryAddr16(getRegister16(REG_HL), getRegister16(SourceRegister)), checkCarryAddr16(getRegister16(REG_HL), getRegister16(SourceRegister))); 
+                                uint8_t Low;
+                                uint8_t High;
+                                splituint16(NewValue, &Low, &High);
+                                setRegister8(REG_L, Low); });
+    PendingInstructions.push([this, AddValue]
+                             {  int16_t NewValue = getRegister16(REG_HL) + AddValue;
+                                setFlags(getFlagZ(), 0, checkHalfCarryAddr16(getRegister16(REG_HL), AddValue), checkCarryAddr16(getRegister16(REG_HL), AddValue)); 
+                                uint8_t Low;
+                                uint8_t High;
+                                splituint16(NewValue, &Low, &High);
+                                setRegister8(REG_H, High); });
 }
 
-void Cpu::OP_ADD_spe(uint8_t ImmediateValue)
+void Cpu::OP_ADD_spe()
 {
+    /*
     uint16_t NewValue = sp + (int8_t)ImmediateValue;
 
     uint8_t Low;
@@ -1017,107 +1453,316 @@ void Cpu::OP_ADD_spe(uint8_t ImmediateValue)
     splituint16(sp, &Low, &High);
 
     setFlags(0, 0, checkHalfCarryAdd(Low, (int8_t)ImmediateValue), checkCarryAdd(Low, (int8_t)ImmediateValue));
-    sp = NewValue;
+
+    */
+
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             {  uint16_t NewValue = sp + (int8_t)Z;
+                                uint8_t Low;
+                                uint8_t High;
+                                splituint16(sp, &Low, &High);
+                                setFlags(0, 0, checkHalfCarryAdd(Low, (int8_t)Z), checkCarryAdd(Low, (int8_t)Z)); });
+    PendingInstructions.push([this] {});
+    PendingInstructions.push([this]
+                             {  uint16_t NewValue = sp + (int8_t)Z;
+                                sp = NewValue; });
 }
 
 void Cpu::OP_RLC(uint8_t DestRegister)
 {
+    /*
     uint8_t NewValue = (getRegister8(DestRegister) << 1) | (getRegister8(DestRegister) >> 7);
     setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) >> 7);
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister]
+                             {  uint8_t NewValue = (Z << 1) | (Z >> 7);
+                                setFlags(0, 0, 0, Z >> 7);
+                                setRegister8(DestRegister, NewValue); });
 }
 void Cpu::OP_RLCA()
 {
+    /*
     uint8_t NewValue = (getRegister8(REG_A) << 1) | (getRegister8(REG_A) >> 7);
     setFlags(0, 0, 0, getRegister8(REG_A) >> 7);
     setRegister8(REG_A, NewValue);
+    */
+    PendingInstructions.push([this]
+                             {  uint8_t NewValue = (getRegister8(REG_A) << 1) | (getRegister8(REG_A) >> 7);
+                                setFlags(0, 0, 0, getRegister8(REG_A) >> 7);
+                                setRegister8(REG_A, NewValue); });
 }
 void Cpu::OP_RRC(uint8_t DestRegister)
 {
+    /*
     uint8_t NewValue = (getRegister8(DestRegister) >> 1) | (getRegister8(DestRegister) << 7);
     setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) & 0x1);
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister]
+                             {  uint8_t NewValue = (Z >> 1) | (Z << 7);
+                                setFlags(NewValue == 0, 0, 0, Z & 0x1);
+                                setRegister8(DestRegister, NewValue); });
 }
 void Cpu::OP_RRCA()
 {
+    /*
     uint8_t NewValue = (getRegister8(REG_A) >> 1) | (getRegister8(REG_A) << 7);
     setFlags(0, 0, 0, getRegister8(REG_A) & 0x1);
     setRegister8(REG_A, NewValue);
+    */
+    PendingInstructions.push([this]
+                             {  uint8_t NewValue = (getRegister8(REG_A) >> 1) | (getRegister8(REG_A) << 7);
+                                setFlags(0, 0, 0, getRegister8(REG_A) & 0x1);
+                                setRegister8(REG_A, NewValue); });
 }
 void Cpu::OP_RL(uint8_t DestRegister)
 {
+    /*
     uint8_t NewValue = (getRegister8(DestRegister) << 1) | (uint8_t)getFlagC();
     setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) >> 7);
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister]
+                             {  uint8_t NewValue = (Z << 1) | (uint8_t)getFlagC();
+                                setFlags(NewValue == 0, 0, 0, Z >> 7);
+                                setRegister8(DestRegister, NewValue); });
 }
 void Cpu::OP_RLA()
 {
+    /*
     uint8_t NewValue = (getRegister8(REG_A) << 1) | (uint8_t)getFlagC();
     setFlags(0, 0, 0, getRegister8(REG_A) >> 7);
     setRegister8(REG_A, NewValue);
+    */
+    PendingInstructions.push([this]
+                             {  uint8_t NewValue = (getRegister8(REG_A) << 1) | (uint8_t)getFlagC();
+                                setFlags(0, 0, 0, getRegister8(REG_A) >> 7);
+                                setRegister8(REG_A, NewValue); });
 }
 void Cpu::OP_RR(uint8_t DestRegister)
 {
+    /*
     uint8_t NewValue = (getRegister8(DestRegister) >> 1) | (getFlagC() << 7);
     setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) & 0x1);
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister]
+                             {  uint8_t NewValue = (Z >> 1) | (getFlagC() << 7);
+                                setFlags(NewValue == 0, 0, 0, Z & 0x1);
+                                setRegister8(DestRegister, NewValue); });
 }
 void Cpu::OP_RRA()
 {
+    /*
     uint8_t NewValue = (getRegister8(REG_A) >> 1) | (getFlagC() << 7);
     setFlags(0, 0, 0, getRegister8(REG_A) & 0x1);
     setRegister8(REG_A, NewValue);
+    */
+    PendingInstructions.push([this]
+                             {  uint8_t NewValue = (getRegister8(REG_A) >> 1) | (getFlagC() << 7);
+                                setFlags(0, 0, 0, getRegister8(REG_A) & 0x1);
+                                setRegister8(REG_A, NewValue); });
 }
 void Cpu::OP_SLA(uint8_t DestRegister)
 {
+    /*
     uint8_t NewValue = getRegister8(DestRegister) << 1;
     setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) >> 7);
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister]
+                             {  uint8_t NewValue = Z << 1;
+                                setFlags(NewValue == 0, 0, 0, Z >> 7);
+                                setRegister8(DestRegister, NewValue); });
 }
 void Cpu::OP_SRA(uint8_t DestRegister)
 {
+    /*
     uint8_t NewValue = getRegister8(DestRegister) >> 1 | (getRegister8(DestRegister) & 0b10000000);
     setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) & 0x1);
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister]
+                             {  uint8_t NewValue = Z >> 1 | (Z & 0b10000000);
+                                setFlags(NewValue == 0, 0, 0, Z & 0x1);
+                                setRegister8(DestRegister, NewValue); });
 }
 void Cpu::OP_SWAP(uint8_t DestRegister)
 {
+    /*
     uint8_t NewValue = getRegister8(DestRegister) >> 4 | getRegister8(DestRegister) << 4;
     setFlags(NewValue == 0, 0, 0, 0);
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister]
+                             {  uint8_t NewValue = Z >> 4 | Z << 4;
+                                setFlags(NewValue == 0, 0, 0, 0);
+                                setRegister8(DestRegister, NewValue); });
 }
 void Cpu::OP_SRL(uint8_t DestRegister)
 {
+    /*
     uint8_t NewValue = getRegister8(DestRegister) >> 1;
     setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) & 0x1);
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister]
+                             {  uint8_t NewValue = Z >> 1;
+                                setFlags(NewValue == 0, 0, 0, Z & 0x1);
+                                setRegister8(DestRegister, NewValue); });
 }
 void Cpu::OP_BIT(uint8_t DestRegister, uint8_t Bit)
 {
+    /*
     uint8_t BitValue = getRegister8(DestRegister) & (1 << Bit);
     setFlags((BitValue & 0xFF) == 0, 0, 1, getFlagC());
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, Bit]
+                             {  uint8_t BitValue = Z & (1 << Bit);
+                                setFlags((BitValue & 0xFF) == 0, 0, 1, getFlagC()); });
 }
 void Cpu::OP_RES(uint8_t DestRegister, uint8_t Bit)
 {
+    /*
     uint8_t NewValue = getRegister8(DestRegister) & ((0xFF << (Bit + 1)) | (0xFF >> (8 - Bit)));
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister, Bit]
+                             {  uint8_t NewValue = Z & ((0xFF << (Bit + 1)) | (0xFF >> (8 - Bit)));
+                                setRegister8(DestRegister, NewValue); });
 }
 void Cpu::OP_SET(uint8_t DestRegister, uint8_t Bit)
 {
+    /*
     uint8_t NewValue = getRegister8(DestRegister) | (1 << Bit);
     setRegister8(DestRegister, NewValue);
+    */
+
+    // TODO HL cycles
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { Z = getRegister8(DestRegister); });
+    PendingInstructions.push([this, DestRegister, Bit]
+                             {  uint8_t NewValue = Z | (1 << Bit);
+                                setRegister8(DestRegister, NewValue); });
 }
 
-void Cpu::OP_JP_imm16(uint16_t Adress)
+void Cpu::OP_JP_imm16()
 {
-    pc = Adress;
+    // pc = Adress;
+    PendingInstructions.push([this]
+                             { Z = readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { W = readMemory(pc); pc++; });
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this]
+                             { pc = combineuint8(Z, W); });
 }
 void Cpu::OP_JP_hl()
 {
-    pc = getRegister16(REG_HL);
+    // pc = getRegister16(REG_HL);
+    PendingInstructions.push([this]
+                             { pc = getRegister16(REG_HL); });
 }
-void Cpu::OP_JP_cc(uint16_t Adress, uint8_t Condition)
+void Cpu::OP_JP_cc(uint8_t Condition)
 {
+    /*
     switch (Condition)
     {
     case 0: // NZ
@@ -1148,13 +1793,53 @@ void Cpu::OP_JP_cc(uint16_t Adress, uint8_t Condition)
             pc += 2;
         break;
     }
+    */
+
+    PendingInstructions.push([this]
+                             { Z = readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { W = readMemory(pc); pc++; });
+    PendingInstructions.push([] {});
+    switch (Condition)
+    {
+    case 0: // NZ
+        if (!getFlagZ())
+            PendingInstructions.push([this]
+                                     { pc = combineuint8(Z, W); });
+        break;
+
+    case 1: // Z
+        if (getFlagZ())
+            PendingInstructions.push([this]
+                                     { pc = combineuint8(Z, W); });
+        break;
+
+    case 2: // NC
+        if (!getFlagC())
+            PendingInstructions.push([this]
+                                     { pc = combineuint8(Z, W); });
+        break;
+
+    case 3: // C
+        if (getFlagC())
+            PendingInstructions.push([this]
+                                     { pc = combineuint8(Z, W); });
+        break;
+    }
 }
-void Cpu::OP_JR(uint8_t Offset)
+void Cpu::OP_JR()
 {
-    pc = pc + (int8_t)Offset;
+    // pc = pc + (int8_t)Offset;
+
+    PendingInstructions.push([this]
+                             { Z = readMemory(pc); pc++; });
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this]
+                             { pc = pc + (int8_t)Z; });
 }
-void Cpu::OP_JR_cc(uint8_t Offset, uint8_t Condition)
+void Cpu::OP_JR_cc(uint8_t Condition)
 {
+    /*
     switch (Condition)
     {
     case 0: // NZ
@@ -1176,16 +1861,67 @@ void Cpu::OP_JR_cc(uint8_t Offset, uint8_t Condition)
         if (getFlagC())
             pc = pc + (int8_t)Offset;
         break;
+    }*/
+
+    PendingInstructions.push([this]
+                             { Z = readMemory(pc); pc++; });
+    PendingInstructions.push([] {});
+    switch (Condition)
+    {
+    case 0: // NZ
+        if (!getFlagZ())
+            PendingInstructions.push([this]
+                                     { pc = pc + (int8_t)Z; });
+        break;
+
+    case 1: // Z
+        if (getFlagZ())
+            PendingInstructions.push([this]
+                                     { pc = pc + (int8_t)Z; });
+        break;
+
+    case 2: // NC
+        if (!getFlagC())
+            PendingInstructions.push([this]
+                                     { pc = pc + (int8_t)Z; });
+        break;
+
+    case 3: // C
+        if (getFlagC())
+            PendingInstructions.push([this]
+                                     { pc = pc + (int8_t)Z; });
+        break;
     }
 }
-void Cpu::OP_CALL(uint16_t Adress)
+void Cpu::OP_CALL()
 {
+    /*
     pc += 2;
     pushStack(pc);
     pc = Adress;
+    */
+
+    PendingInstructions.push([this]
+                             { Z = readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { W = readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { sp--; });
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this]
+                             {  uint8_t Low;
+                                uint8_t High;
+                                splituint16(sp, &Low, &High);
+                                writeMemory(sp, High); sp--; });
+    PendingInstructions.push([this]
+                             {  uint8_t Low;
+                                uint8_t High;
+                                splituint16(sp, &Low, &High);
+                                writeMemory(sp, Low); });
 }
-void Cpu::OP_CALL_cc(uint16_t Adress, uint8_t Condition)
+void Cpu::OP_CALL_cc(uint8_t Condition)
 {
+    /*
     pc += 2;
     switch (Condition)
     {
@@ -1218,16 +1954,104 @@ void Cpu::OP_CALL_cc(uint16_t Adress, uint8_t Condition)
         {
             pushStack(pc);
             pc = Adress;
+        }
+        break;
+    }
+    */
+    PendingInstructions.push([this]
+                             { Z = readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { W = readMemory(pc); pc++; });
+    PendingInstructions.push([] {});
+    switch (Condition)
+    {
+    case 0: // NZ
+        if (!getFlagZ())
+        {
+            PendingInstructions.push([this]
+                                     { sp--; });
+            PendingInstructions.push([this]
+                                     {  uint8_t Low;
+                                        uint8_t High;
+                                        splituint16(sp, &Low, &High);
+                                        writeMemory(sp, High); sp--; });
+            PendingInstructions.push([this]
+                                     {  uint8_t Low;
+                                        uint8_t High;
+                                        splituint16(sp, &Low, &High);
+                                        writeMemory(sp, Low); });
+        }
+        break;
+
+    case 1: // Z
+        if (getFlagZ())
+        {
+            PendingInstructions.push([this]
+                                     { sp--; });
+            PendingInstructions.push([this]
+                                     {  uint8_t Low;
+                                        uint8_t High;
+                                        splituint16(sp, &Low, &High);
+                                        writeMemory(sp, High); sp--; });
+            PendingInstructions.push([this]
+                                     {  uint8_t Low;
+                                        uint8_t High;
+                                        splituint16(sp, &Low, &High);
+                                        writeMemory(sp, Low); });
+        }
+        break;
+
+    case 2: // NC
+        if (!getFlagC())
+        {
+            PendingInstructions.push([this]
+                                     { sp--; });
+            PendingInstructions.push([this]
+                                     {  uint8_t Low;
+                                        uint8_t High;
+                                        splituint16(sp, &Low, &High);
+                                        writeMemory(sp, High); sp--; });
+            PendingInstructions.push([this]
+                                     {  uint8_t Low;
+                                        uint8_t High;
+                                        splituint16(sp, &Low, &High);
+                                        writeMemory(sp, Low); });
+        }
+        break;
+
+    case 3: // C
+        if (getFlagC())
+        {
+            PendingInstructions.push([this]
+                                     { sp--; });
+            PendingInstructions.push([this]
+                                     {  uint8_t Low;
+                                        uint8_t High;
+                                        splituint16(sp, &Low, &High);
+                                        writeMemory(sp, High); sp--; });
+            PendingInstructions.push([this]
+                                     {  uint8_t Low;
+                                        uint8_t High;
+                                        splituint16(sp, &Low, &High);
+                                        writeMemory(sp, Low); });
         }
         break;
     }
 }
 void Cpu::OP_RET()
 {
-    pc = popStack();
+    //pc = popStack();
+    PendingInstructions.push([this]
+                             { Z =  readMemory(sp); sp++; });
+    PendingInstructions.push([this]
+                             { W =  readMemory(sp); sp++; });
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this]
+                             { pc = combineuint8(Z, W); });
 }
 void Cpu::OP_RET_cc(uint8_t Condition)
 {
+    /*
     switch (Condition)
     {
     case 0: // NZ
@@ -1250,6 +2074,15 @@ void Cpu::OP_RET_cc(uint8_t Condition)
             pc = popStack();
         break;
     }
+    */
+    // TODO
+    PendingInstructions.push([this]
+                             { Z =  readMemory(sp); sp++; });
+    PendingInstructions.push([this]
+                             { W =  readMemory(sp); sp++; });
+    PendingInstructions.push([] {});
+    PendingInstructions.push([this]
+                             { pc = combineuint8(Z, W); });
 }
 void Cpu::OP_RETI()
 {
