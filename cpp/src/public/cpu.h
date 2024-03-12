@@ -92,9 +92,13 @@ public:
     void OP_ADD_spe(uint8_t ImmediateValue);
 
     void OP_RLC(uint8_t DestRegister);
+    void OP_RLCA();
     void OP_RRC(uint8_t DestRegister);
+    void OP_RRCA();
     void OP_RL(uint8_t DestRegister);
+    void OP_RLA();
     void OP_RR(uint8_t DestRegister);
+    void OP_RRA();
     void OP_SLA(uint8_t DestRegister);
     void OP_SRA(uint8_t DestRegister);
     void OP_SWAP(uint8_t DestRegister);
@@ -145,6 +149,8 @@ public:
     bool checkHalfCarrySub(uint8_t n1, uint8_t n2);
     void pushStack(uint16_t Value);
     uint16_t popStack();
+
+    uint8_t pendingEI = false;
 };
 
 #endif // CPU_H

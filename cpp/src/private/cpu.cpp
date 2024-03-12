@@ -15,9 +15,9 @@ uint8_t Cpu::readMemory(uint16_t Adress)
 
 void Cpu::writeMemory(uint16_t Adress, uint8_t Value)
 {
-    if (Adress == 0xFF01 || Adress == 0xFF02)
+    if (Adress == 0xFF02 && Value == 0x81)
     {
-        std::cout << std::hex << Value << std::flush;
+        std::cout << (char)readMemory(0xFF01);
     }
     memory[Adress] = Value;
 }
@@ -56,7 +56,6 @@ void Cpu::Start()
     // pc = 0x0213;
     while (pc < 0xFFFF)
     {
-        // std::cout << std::hex << pc << "\n" << std::flush;
         ExecuteNextOP();
     }
 }
@@ -150,16 +149,16 @@ void Cpu::ExecuteNextOP()
             switch (OpCodePart2)
             {
             case 0:
-                OP_RLC(REG_A);
+                OP_RLCA();
                 break;
             case 1:
-                OP_RRC(REG_A);
+                OP_RRCA();
                 break;
             case 2:
-                OP_RL(REG_A);
+                OP_RLA();
                 break;
             case 3:
-                OP_RR(REG_A);
+                OP_RRA();
                 break;
             case 4:
                 OP_DAA();
@@ -438,6 +437,13 @@ void Cpu::ExecuteNextOP()
         break;
     default:
         break;
+    }
+
+    if(pendingEI == 2){
+        ime = 1;
+        pendingEI = 0;
+    }else if(pendingEI == 1){
+        pendingEI = 2;
     }
 }
 
@@ -780,26 +786,50 @@ void Cpu::OP_ADD_spe(uint8_t ImmediateValue)
 void Cpu::OP_RLC(uint8_t DestRegister)
 {
     uint8_t NewValue = (getRegister8(DestRegister) << 1) | (getRegister8(DestRegister) >> 7);
-    setFlags(DestRegister != 7 ? NewValue == 0 : 0, 0, 0, getRegister8(DestRegister) >> 7);
+    setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) >> 7);
     setRegister8(DestRegister, NewValue);
+}
+void Cpu::OP_RLCA()
+{
+    uint8_t NewValue = (getRegister8(REG_A) << 1) | (getRegister8(REG_A) >> 7);
+    setFlags(0, 0, 0, getRegister8(REG_A) >> 7);
+    setRegister8(REG_A, NewValue);
 }
 void Cpu::OP_RRC(uint8_t DestRegister)
 {
     uint8_t NewValue = (getRegister8(DestRegister) >> 1) | (getRegister8(DestRegister) << 7);
-    setFlags(DestRegister != 7 ? NewValue == 0 : 0, 0, 0, getRegister8(DestRegister) & 0x1);
+    setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) & 0x1);
     setRegister8(DestRegister, NewValue);
+}
+void Cpu::OP_RRCA()
+{
+    uint8_t NewValue = (getRegister8(REG_A) >> 1) | (getRegister8(REG_A) << 7);
+    setFlags(0, 0, 0, getRegister8(REG_A) & 0x1);
+    setRegister8(REG_A, NewValue);
 }
 void Cpu::OP_RL(uint8_t DestRegister)
 {
     uint8_t NewValue = (getRegister8(DestRegister) << 1) | (uint8_t)getFlagC();
-    setFlags(DestRegister != 7 ? NewValue == 0 : 0, 0, 0, getRegister8(DestRegister) >> 7);
+    setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) >> 7);
     setRegister8(DestRegister, NewValue);
+}
+void Cpu::OP_RLA()
+{
+    uint8_t NewValue = (getRegister8(REG_A) << 1) | (uint8_t)getFlagC();
+    setFlags(0, 0, 0, getRegister8(REG_A) >> 7);
+    setRegister8(REG_A, NewValue);
 }
 void Cpu::OP_RR(uint8_t DestRegister)
 {
     uint8_t NewValue = (getRegister8(DestRegister) >> 1) | (getFlagC() << 7);
-    setFlags(DestRegister != 7 ? NewValue == 0 : 0, 0, 0, getRegister8(DestRegister) & 0x1);
+    setFlags(NewValue == 0, 0, 0, getRegister8(DestRegister) & 0x1);
     setRegister8(DestRegister, NewValue);
+}
+void Cpu::OP_RRA()
+{
+    uint8_t NewValue = (getRegister8(REG_A) >> 1) | (getFlagC() << 7);
+    setFlags(0, 0, 0, getRegister8(REG_A) & 0x1);
+    setRegister8(REG_A, NewValue);
 }
 void Cpu::OP_SLA(uint8_t DestRegister)
 {
@@ -827,8 +857,8 @@ void Cpu::OP_SRL(uint8_t DestRegister)
 }
 void Cpu::OP_BIT(uint8_t DestRegister, uint8_t Bit)
 {
-    uint8_t BitValue = (getRegister8(DestRegister) << (7 - Bit)) >> 7;
-    setFlags(BitValue == 0, 0, 1, getFlagC());
+    uint8_t BitValue = getRegister8(DestRegister) & (1 << Bit);
+    setFlags((BitValue & 0xFF) == 0, 0, 1, getFlagC());
 }
 void Cpu::OP_RES(uint8_t DestRegister, uint8_t Bit)
 {
@@ -987,7 +1017,7 @@ void Cpu::OP_RET_cc(uint8_t Condition)
 void Cpu::OP_RETI()
 {
     pc = popStack();
-    ime = 1; // TODO delay 1 instruction
+    pendingEI = 1;
 }
 void Cpu::OP_RST(uint8_t Vector)
 {
@@ -1021,11 +1051,12 @@ void Cpu::OP_STOP()
 }
 void Cpu::OP_DI()
 {
-    ime = 0; // TODO clear delayed ei
+    ime = 0;
+    pendingEI = 0;
 }
 void Cpu::OP_EI()
 {
-    ime = 1; // TODO delay 1 instruction
+    pendingEI = 1;
 }
 
 uint8_t Cpu::getRegister8(uint8_t Register)
