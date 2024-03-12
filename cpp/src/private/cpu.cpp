@@ -592,8 +592,8 @@ void Cpu::OP_LD_hlspimm8(uint8_t ImmediateValue)
     uint8_t High;
     splituint16(sp, &Low, &High);
 
-    bool HalfCarry = (int8_t)ImmediateValue > 0 ? checkHalfCarryAdd(Low, ImmediateValue) : checkHalfCarrySub(Low, -1 * (int8_t)ImmediateValue);
-    bool Carry = (int8_t)ImmediateValue > 0 ? checkCarryAdd(Low, ImmediateValue) : checkCarrySub(Low, -1 * (int8_t)ImmediateValue);
+    bool HalfCarry = checkHalfCarryAdd(Low, (int8_t)ImmediateValue);
+    bool Carry = checkCarryAdd(Low, (int8_t)ImmediateValue);
 
     setFlags(0, 0, HalfCarry, Carry);
     setRegister16(REG_HL, NewValue);
@@ -621,8 +621,8 @@ void Cpu::OP_ADC(uint8_t Value)
 {
     uint8_t Result = getRegister8(REG_A) + Value + getFlagC();
 
-    setFlags(getFlagZ(), 0, checkHalfCarryAdd(getRegister8(REG_A), Value + getFlagC()) || checkHalfCarryAdd(Value, getFlagC()), 
-                            checkCarryAdd(getRegister8(REG_A), Value + getFlagC()) || checkCarryAdd(Value, getFlagC())); // TODO Fix three way carry flag
+    setFlags(Result == 0, 0, checkHalfCarryAdd(getRegister8(REG_A), Value) || checkHalfCarryAdd(getRegister8(REG_A) + Value, getFlagC()), 
+                            checkCarryAdd(getRegister8(REG_A), Value) || checkCarryAdd(getRegister8(REG_A) + Value, getFlagC()));
     
     setRegister8(REG_A, Result);
 }
@@ -636,7 +636,12 @@ void Cpu::OP_SUB(uint8_t Value)
 }
 void Cpu::OP_SBC(uint8_t Value)
 {
-    OP_SUB(Value - getFlagC());
+    uint8_t Result = getRegister8(REG_A) - Value - getFlagC();
+
+    setFlags(Result == 0, 1, checkHalfCarrySub(getRegister8(REG_A), Value) || checkHalfCarrySub(getRegister8(REG_A) - Value, getFlagC()), 
+                            checkCarrySub(getRegister8(REG_A), Value ) || checkCarrySub(getRegister8(REG_A) - Value, getFlagC()));
+    
+    setRegister8(REG_A, Result);
 }
 void Cpu::OP_AND(uint8_t Value)
 {
@@ -768,10 +773,7 @@ void Cpu::OP_ADD_spe(uint8_t ImmediateValue)
     uint8_t High;
     splituint16(sp, &Low, &High);
 
-    bool HalfCarry = (int8_t)ImmediateValue > 0 ? checkHalfCarryAdd(Low, ImmediateValue) : checkHalfCarrySub(Low, -1 * (int8_t)ImmediateValue);
-    bool Carry = (int8_t)ImmediateValue > 0 ? checkCarryAdd(Low, ImmediateValue) : checkCarrySub(Low, -1 * (int8_t)ImmediateValue);
-
-    setFlags(0, 0, HalfCarry, Carry);
+    setFlags(0, 0, checkHalfCarryAdd(Low, (int8_t)ImmediateValue), checkCarryAdd(Low, (int8_t)ImmediateValue));
     sp = NewValue;
 }
 
@@ -911,11 +913,13 @@ void Cpu::OP_JR_cc(uint8_t Offset, uint8_t Condition)
 }
 void Cpu::OP_CALL(uint16_t Adress)
 {
+    pc += 2;
     pushStack(pc);
     pc = Adress;
 }
 void Cpu::OP_CALL_cc(uint16_t Adress, uint8_t Condition)
 {
+    pc += 2;
     switch (Condition)
     {
     case 0: // NZ
@@ -924,8 +928,6 @@ void Cpu::OP_CALL_cc(uint16_t Adress, uint8_t Condition)
             pushStack(pc);
             pc = Adress;
         }
-        else
-            pc += 2;
         break;
 
     case 1: // Z
@@ -934,8 +936,6 @@ void Cpu::OP_CALL_cc(uint16_t Adress, uint8_t Condition)
             pushStack(pc);
             pc = Adress;
         }
-        else
-            pc += 2;
         break;
 
     case 2: // NC
@@ -944,8 +944,6 @@ void Cpu::OP_CALL_cc(uint16_t Adress, uint8_t Condition)
             pushStack(pc);
             pc = Adress;
         }
-        else
-            pc += 2;
         break;
 
     case 3: // C
@@ -954,8 +952,6 @@ void Cpu::OP_CALL_cc(uint16_t Adress, uint8_t Condition)
             pushStack(pc);
             pc = Adress;
         }
-        else
-            pc += 2;
         break;
     }
 }
@@ -1135,9 +1131,11 @@ void Cpu::setRegister16(uint8_t Register, uint16_t Value)
         break;
     case 6:
         splituint16(Value, &registers.f, &registers.a);
+        registers.f = registers.f & 0xF0;
         break;
     case 7:
         splituint16(Value, &registers.f, &registers.a);
+        registers.f = registers.f & 0xF0;
         break;
     }
 }
