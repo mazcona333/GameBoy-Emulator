@@ -19,7 +19,8 @@ void Cpu::writeMemory(uint16_t Adress, uint8_t Value)
     {
         std::cout << (char)readMemory(0xFF01); // SB
     }
-    if(Adress == 0xFF04){ // DIV
+    if (Adress == 0xFF04)
+    { // DIV
         Value = 0;
     }
     memory[Adress] = Value;
@@ -49,15 +50,17 @@ bool Cpu::loadRomToMemory(char const *filename)
     }
 }
 
-bool Cpu::loadROM(char const *filename){
+bool Cpu::loadROM(char const *filename)
+{
     return loadRomToMemory(filename) && loadBoot();
 }
 
 bool Cpu::loadBoot()
 {
-    if(BootRomEnabled)
+    if (BootRomEnabled)
         return loadROM("D:\\Git\\GameBoy-Emulator\\roms\\boot\\dmg_boot.bin");
-    else{
+    else
+    {
         registers.a = 0x01;
         registers.f = 0xB0;
         registers.b = 0x00;
@@ -106,8 +109,8 @@ bool Cpu::loadBoot()
         memory[0xFF45] = 0x00;
         memory[0xFF46] = 0xFF;
         memory[0xFF47] = 0xFC;
-        //memory[0xFF48] = 0xCF;
-        //memory[0xFF49] = 0xCF;
+        // memory[0xFF48] = 0xCF;
+        // memory[0xFF49] = 0xCF;
         memory[0xFF4A] = 0x00;
         memory[0xFF4B] = 0x00;
         return true;
@@ -119,31 +122,51 @@ void Cpu::Tick()
     CycleCounter++;
     UpdateTimer();
     HandleInterrupt();
-    if (RunningMode == CpuMode::Normal)
-        ExecuteNextOP();
+
+    if (PendingInstructions.size() > 0)
+    {
+        PendingInstructions.front()();
+        PendingInstructions.pop();
+    }
+
+    if (PendingInstructions.size() == 0)
+    {
+        if (RunningMode == CpuMode::Normal)
+            FetchNextOP();
+    }
 }
 
 void Cpu::HandleInterrupt()
 {
     if (readMemory(0xFFFF) & readMemory(0xFF0F)) // Interruption pending
     {
-        if(ime){
+        if (ime)
+        {
             // OP_NOP();OP_NOP();
             pushStack(pc);
             // Handle interrupt
-            if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x1){ // VBlank
+            if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x1)
+            { // VBlank
                 pc = 0x40;
                 writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11111110);
-            }else if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x2){ // LCD
+            }
+            else if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x2)
+            { // LCD
                 pc = 0x48;
                 writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11111101);
-            }else if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x4){ // Timer
+            }
+            else if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x4)
+            { // Timer
                 pc = 0x50;
                 writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11111011);
-            }else if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x8){ // Serial
+            }
+            else if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x8)
+            { // Serial
                 pc = 0x48;
                 writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11110111);
-            }else if((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x16){ // Joypad
+            }
+            else if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x16)
+            { // Joypad
                 pc = 0x60;
                 writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11101111);
             }
@@ -152,41 +175,49 @@ void Cpu::HandleInterrupt()
         RunningMode = CpuMode::Normal; // Resume normal execution
     }
     else // No interruption pending
-    { 
+    {
     }
 }
 
-void Cpu::UpdateTimer(){
-    if(CycleCounter % 64 == 0){
+void Cpu::UpdateTimer()
+{
+    if (CycleCounter % 64 == 0)
+    {
         memory[0xFF04] = memory[0xFF04] + 1;
     }
-    if(memory[0xFF07] & 0x4){
+    if (memory[0xFF07] & 0x4)
+    {
         switch (memory[0xFF07] & 0x3)
         {
         case 0b00:
-            if(CycleCounter % 256 == 0){
+            if (CycleCounter % 256 == 0)
+            {
                 memory[0xFF05] = memory[0xFF05] + 1;
             }
             break;
         case 0b01:
-            if(CycleCounter % 4 == 0){
+            if (CycleCounter % 4 == 0)
+            {
                 memory[0xFF05] = memory[0xFF05] + 1;
             }
             break;
         case 0b10:
-            if(CycleCounter % 16 == 0){
+            if (CycleCounter % 16 == 0)
+            {
                 memory[0xFF05] = memory[0xFF05] + 1;
             }
             break;
         case 0b11:
-            if(CycleCounter % 64 == 0){
+            if (CycleCounter % 64 == 0)
+            {
                 memory[0xFF05] = memory[0xFF05] + 1;
             }
             break;
         default:
             break;
         }
-        if(memory[0xFF05] == 0){
+        if (memory[0xFF05] == 0)
+        {
             memory[0xFF05] = memory[0xFF06];
             memory[0xFF0F] = memory[0xFF0F] | 0b00000100;
         }
@@ -194,7 +225,7 @@ void Cpu::UpdateTimer(){
 }
 
 // TODO CPU cycles
-void Cpu::ExecuteNextOP()
+void Cpu::FetchNextOP()
 {
     uint8_t OpCode = readMemory(pc++);
 
@@ -270,7 +301,7 @@ void Cpu::ExecuteNextOP()
             break;
 
         case 6:
-            OP_LD_r8imm8(OpCodePart2, readMemory(pc++));
+            OP_LD_r8imm8(OpCodePart2);
             break;
 
         case 7:
@@ -437,8 +468,7 @@ void Cpu::ExecuteNextOP()
                 OP_LD_raimm8mem(getRegister8(REG_C));
                 break;
             case 7:
-                OP_LD_raimm16mem(combineuint8(readMemory(pc), readMemory(pc + 1)));
-                pc += 2;
+                OP_LD_raimm16mem();
                 break;
             default:
                 break;
@@ -631,37 +661,84 @@ void Cpu::ExecutePrefixedOP()
 
 void Cpu::OP_NOP()
 {
+    PendingInstructions.push([] {});
 }
 
-void Cpu::OP_LD_r8imm8(uint8_t DestRegister, uint8_t ImmediateValue)
+void Cpu::OP_LD_r8imm8(uint8_t DestRegister)
 {
-    setRegister8(DestRegister, ImmediateValue);
+    // setRegister8(DestRegister, ImmediateValue);
+
+    PendingInstructions.push([this]
+                             { Z = readMemory(pc++); });
+    if (DestRegister == 6)
+    {
+        PendingInstructions.push([] {});
+    }
+    PendingInstructions.push([this, DestRegister]
+                             { setRegister8(DestRegister, Z); });
 }
 
 void Cpu::OP_LD_r8r8(uint8_t DestRegister, uint8_t SourceRegister)
 {
-    uint8_t SourceRegisterContent = getRegister8(SourceRegister);
-    setRegister8(DestRegister, SourceRegisterContent);
+    // uint8_t SourceRegisterContent = getRegister8(SourceRegister);
+    // setRegister8(DestRegister, SourceRegisterContent);
+
+    if (SourceRegister != 6)
+    {
+        if (DestRegister == 6)
+        {
+            PendingInstructions.push([] {});
+        }
+        PendingInstructions.push([this, DestRegister, SourceRegister]
+                                 { setRegister8(DestRegister, getRegister8(SourceRegister)); });
+    }
+    else
+    {
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = readMemory(getRegister8(SourceRegister)); });
+        PendingInstructions.push([this, DestRegister]
+                                 { setRegister8(DestRegister, Z); });
+    }
 }
 
 void Cpu::OP_LD_rar16mem(uint8_t SourceRegister)
 {
     uint8_t SourceRegisterContent;
     if (SourceRegister <= 3)
-        SourceRegisterContent = readMemory(getRegister16(SourceRegister));
+    {
+        // SourceRegisterContent = readMemory(getRegister16(SourceRegister));
+
+        PendingInstructions.push([this, SourceRegister]
+                                 { Z = readMemory(getRegister16(SourceRegister)); });
+    }
     else
     {
+        /*
         SourceRegisterContent = readMemory(getRegister16(REG_HL));
         if (SourceRegister <= 5)
             setRegister16(REG_HL, getRegister16(REG_HL) + 1);
         else
             setRegister16(REG_HL, getRegister16(REG_HL) - 1);
+        */
+        if (SourceRegister <= 5)
+        {
+            PendingInstructions.push([this]
+                                     { Z = readMemory(getRegister16(REG_HL)); setRegister16(REG_HL, getRegister16(REG_HL) + 1); });
+        }
+        else
+        {
+            PendingInstructions.push([this]
+                                     { Z = readMemory(getRegister16(REG_HL)); setRegister16(REG_HL, getRegister16(REG_HL) - 1); });
+        }
     }
-    setRegister8(REG_A, SourceRegisterContent);
+    // setRegister8(REG_A, SourceRegisterContent);
+    PendingInstructions.push([this]
+                             { setRegister8(REG_A, Z); });
 }
 
 void Cpu::OP_LD_r16memra(uint8_t DestRegister)
 {
+    /*
     uint8_t SourceRegisterContent = getRegister8(REG_A);
     if (DestRegister <= 3)
         writeMemory(getRegister16(DestRegister), SourceRegisterContent);
@@ -673,11 +750,43 @@ void Cpu::OP_LD_r16memra(uint8_t DestRegister)
         else
             setRegister16(REG_HL, getRegister16(REG_HL) - 1);
     }
+    */
+    if (DestRegister <= 3)
+    {
+        PendingInstructions.push([] {});
+        PendingInstructions.push([this, DestRegister]
+                                 { writeMemory(getRegister16(DestRegister), getRegister8(REG_A)); });
+    }
+    else
+    {
+        if (DestRegister <= 5)
+        {
+            PendingInstructions.push([] {});
+            PendingInstructions.push([this]
+                                     { writeMemory(getRegister16(REG_HL), getRegister8(REG_A)); setRegister16(REG_HL, getRegister16(REG_HL) + 1); });
+        }
+        else
+        {
+            PendingInstructions.push([] {});
+            PendingInstructions.push([this]
+                                     { writeMemory(getRegister16(REG_HL), getRegister8(REG_A)); setRegister16(REG_HL, getRegister16(REG_HL) - 1); });
+        }
+    }
 }
 
-void Cpu::OP_LD_raimm16mem(uint16_t MemoryAddress)
+void Cpu::OP_LD_raimm16mem()
 {
-    setRegister8(REG_A, readMemory(MemoryAddress));
+    // setRegister8(REG_A, readMemory(MemoryAddress));
+    PendingInstructions.push([this]
+                             { Z =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { W =  readMemory(pc); pc++; });
+    PendingInstructions.push([this]
+                             { Z =  combineuint8(Z, W); });
+    PendingInstructions.push([this]
+                             { setRegister8(REG_A, Z); });
+
+    
 }
 
 void Cpu::OP_LD_raimm8mem(uint8_t MemoryAddressLower)
@@ -1169,8 +1278,7 @@ void Cpu::OP_HALT()
         }
         else
         { // No interruption pending
-            // As soon as an interrupt becomes pending, the CPU resumes execution. This is like the above, except that the handler is not called.
-            
+          // As soon as an interrupt becomes pending, the CPU resumes execution. This is like the above, except that the handler is not called.
         }
     }
     RunningMode = CpuMode::Low;

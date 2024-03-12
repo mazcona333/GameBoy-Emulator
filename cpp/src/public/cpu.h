@@ -1,4 +1,6 @@
 #include <iostream>
+#include <queue>
+#include <functional>
 
 #ifndef CPU_H
 #define CPU_H
@@ -29,6 +31,8 @@ public:
     void Tick();
     bool loadROM(char const *filename);
 private:
+    std::queue<std::function<void()>> PendingInstructions;
+
     bool BootRomEnabled = 0;
 
     enum CpuMode { Normal, Low, VeryLow };
@@ -60,17 +64,19 @@ private:
     bool loadRomToMemory(char const *filename);
     bool loadBoot();
 
-    void ExecuteNextOP();
+    void FetchNextOP();
+    uint8_t Z;
+    uint8_t W;
     void ExecutePrefixedOP();
     void HandleInterrupt();
     void UpdateTimer();
 
     void OP_NOP();
-    void OP_LD_r8imm8(uint8_t DestRegister, uint8_t ImmediateValue);
+    void OP_LD_r8imm8(uint8_t DestRegister);
     void OP_LD_r8r8(uint8_t DestRegister, uint8_t SourceRegister);
     void OP_LD_rar16mem(uint8_t SourceRegister);
     void OP_LD_r16memra(uint8_t DestRegister);
-    void OP_LD_raimm16mem(uint16_t MemoryAddress);
+    void OP_LD_raimm16mem();
     void OP_LD_raimm8mem(uint8_t MemoryAddressLower);
     void OP_LD_imm16memra(uint16_t MemoryAddress);
     void OP_LD_imm8memra(uint8_t MemoryAddressLower);
