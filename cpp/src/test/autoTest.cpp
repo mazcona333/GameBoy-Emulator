@@ -163,7 +163,7 @@ int main(int argc, char const *argv[])
             passed = true;
             std::stringstream sstream;
 
-            sstream << "../../tests/" << std::setfill('0') << std::setw(2) << std::hex << i << ".json";
+            sstream << "../../tests/v1/" << std::setfill('0') << std::setw(2) << std::hex << i << ".json";
             std::string testPath = sstream.str();
 
             std::string testsString = readTestFile(testPath.c_str());
@@ -179,7 +179,7 @@ int main(int argc, char const *argv[])
             {
                 passed = true;
                 std::stringstream sstream;
-                sstream << "../../tests/" << std::setfill('0') << std::setw(2) << std::hex << i << " " << std::setfill('0') << std::setw(2) << std::hex << j << ".json";
+                sstream << "../../tests/v1/" << std::setfill('0') << std::setw(2) << std::hex << i << " " << std::setfill('0') << std::setw(2) << std::hex << j << ".json";
                 std::string testPath = sstream.str();
 
                 std::string testsString = readTestFile(testPath.c_str());
