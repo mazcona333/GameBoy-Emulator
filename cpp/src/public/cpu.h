@@ -29,15 +29,16 @@ class Cpu
 public:
     Cpu();
     void Tick();
+    void RunNextOP();
     bool loadROM(char const *filename);
 private:
     std::queue<std::function<void()>> PendingInstructions;
 
     bool BootRomEnabled = 0;
 
-    enum CpuMode { Normal, Low, VeryLow };
+    enum CpuMode { NORMAL, HALT, STOP, ENABLEIME };
 
-    CpuMode RunningMode = Normal;
+    CpuMode RunningMode = CpuMode::NORMAL;
 
     uint8_t CycleCounter = 0;
 
@@ -56,7 +57,7 @@ private:
     uint16_t sp = 0;
     uint8_t ime = 0;
 
-    uint8_t memory[0xFFFF] = {0};
+    uint8_t memory[0xFFFF+1] = {0};
 
     uint8_t readMemory(uint16_t Adress);
     void writeMemory(uint16_t Adress, uint8_t Value);
@@ -65,8 +66,8 @@ private:
     bool loadBoot();
 
     void FetchNextOP();
-    uint8_t Z;
-    uint8_t W;
+    uint8_t Z = 0;
+    uint8_t W = 0;
     void ExecutePrefixedOP();
     void HandleInterrupt();
     void UpdateTimer();
@@ -81,6 +82,7 @@ private:
     void OP_LD_imm16memra();
     void OP_LD_imm8memra();
     void OP_LDH_rcmemra();
+    void OP_LDH_rarcmem();
     void OP_LD_r16imm16(uint8_t DestRegister);
     void OP_LD_imm16sp();
     void OP_LD_sphl();

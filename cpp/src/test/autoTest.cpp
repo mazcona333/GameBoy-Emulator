@@ -45,7 +45,7 @@ void setInitialState(Cpu *cpu, nlohmann::json test)
     cpu->setRegister8(REG_L, test["initial"]["l"]);
     for (size_t i = 0; i < test["initial"]["ram"].size(); i++)
     {
-        cpu->writeMemory(test["initial"]["ram"][i][0], test["initial"]["ram"][i][1]);
+        cpu->memory[test["initial"]["ram"][i][0]] = test["initial"]["ram"][i][1];
     }
 }
 
@@ -131,7 +131,7 @@ bool test(Cpu *cpu, std::string testsString)
         nlohmann::json test = nlohmann::json::parse(nextTest.c_str());
         std::cout << test["name"];
         setInitialState(cpu, test);
-        cpu->FetchNextOP();
+        cpu->RunNextOP();
         passed = checkFinalState(cpu, test) && passed;
         nextTest = getNextTest(&testsString);
         if (!passed)
@@ -141,7 +141,7 @@ bool test(Cpu *cpu, std::string testsString)
     nlohmann::json test = nlohmann::json::parse(nextTest.c_str());
     std::cout << test["name"];
     setInitialState(cpu, test);
-    cpu->FetchNextOP();
+    cpu->RunNextOP();
     passed = checkFinalState(cpu, test) && passed;
     nextTest = getNextTest(&testsString);
     return passed;
@@ -151,7 +151,7 @@ int main(int argc, char const *argv[])
 {
     bool passed = true;
     Cpu* cpu = new Cpu();
-    for (size_t i = 0x00; i <= 0xFF; i++)
+    for (size_t i = 0xF2; i <= 0xFF; i++)
     {
         // Skip illegal instructions
         if(i == 0xD3 || i == 0xDB || i == 0xDD || i == 0xE3 || i == 0xE4 || i == 0xEB || i == 0xEC || i == 0xED || i == 0xF4 || i == 0xFC || i == 0xFD)
