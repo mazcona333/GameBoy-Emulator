@@ -1,4 +1,5 @@
-#include <iostream>
+#include "memory.h"
+
 #include <queue>
 #include <functional>
 
@@ -27,14 +28,14 @@
 class Cpu
 {
 public:
-    Cpu();
+    Cpu(Memory* mem);
     void Tick();
     void RunNextOP();
     bool loadROM(char const *filename);
 private:
-    std::queue<std::function<void()>> PendingInstructions;
+    Memory* memory;
 
-    bool BootRomEnabled = 0;
+    std::queue<std::function<void()>> PendingInstructions;
 
     enum CpuMode { NORMAL, HALT, STOP, ENABLEIME };
 
@@ -57,13 +58,10 @@ private:
     uint16_t sp = 0;
     uint8_t ime = 0;
 
-    uint8_t memory[0xFFFF+1] = {0};
+    //uint8_t memory[0xFFFF+1] = {0};
 
     uint8_t readMemory(uint16_t Adress);
     void writeMemory(uint16_t Adress, uint8_t Value);
-    
-    bool loadRomToMemory(char const *filename);
-    bool loadBoot();
 
     void FetchNextOP();
     uint8_t Z = 0;

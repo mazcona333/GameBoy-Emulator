@@ -1,11 +1,9 @@
 #include "../public/gba.h"
 
-
-
 void testCpuInstr(){
     Gba* gba = new Gba();
-    // bool correct = gba->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\01-special.gb");
-    bool correct = gba->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\02-interrupts.gb"); // Failed EI
+    bool correct = gba->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\01-special.gb");
+    // bool correct = gba->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\02-interrupts.gb"); // Failed EI
     // bool correct = gba->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\03-op sp,hl.gb");
     // bool correct = gba->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\04-op r,imm.gb");
     // bool correct = gba->loadROM("D:\\Git\\GameBoy-Emulator\\roms\\blargg\\cpu_instrs\\individual\\05-op rp.gb");

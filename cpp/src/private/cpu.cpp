@@ -1,125 +1,35 @@
 #include "../public/cpu.h"
-#include <fstream>
-#include <stdexcept>
 
-const unsigned int MAX_MEMORY = 0x7FFF;
-const unsigned int START_ADRESS = 0x0000;
-
-Cpu::Cpu()
+Cpu::Cpu(Memory *mem)
 {
+    memory = mem;
 }
 
 uint8_t Cpu::readMemory(uint16_t Adress)
 {
-    if (Adress < 0x0000 || Adress > 0xFFFF)
-        throw std::out_of_range("Attempted to read memory out of range");
-    return memory[Adress];
+    return memory->readMemory(Adress);
 }
 
 void Cpu::writeMemory(uint16_t Adress, uint8_t Value)
 {
-    if (Adress < 0x0000 || Adress > 0xFFFF)
-        throw std::out_of_range("Attempted to write memory out of range");
-    if (Adress == 0xFF02 && Value == 0x81) // SC
-    {
-        std::cout << (char)readMemory(0xFF01); // SB
-    }
-    if (Adress == 0xFF04)
-    { // DIV
-        Value = 0;
-    }
-    memory[Adress] = Value;
-}
-
-bool Cpu::loadRomToMemory(char const *filename)
-{
-    std::ifstream file(filename, std::ios::binary | std::ios::in);
-
-    if (file.is_open())
-    {
-        // Load ROM in memory, starting from START_ADDRESS
-        char c;
-        for (long i = 0; file.get(c); i++)
-        {
-            if ((START_ADRESS + i) > MAX_MEMORY)
-            {
-                return false;
-            }
-            memory[START_ADRESS + i] = c;
-        }
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    memory->writeMemory(Adress, Value);
 }
 
 bool Cpu::loadROM(char const *filename)
 {
-    return loadRomToMemory(filename) && loadBoot();
-}
+    // TODO Boot ROM
+    registers.a = 0x01;
+    registers.f = 0xB0;
+    registers.b = 0x00;
+    registers.c = 0x13;
+    registers.d = 0x00;
+    registers.e = 0xD8;
+    registers.h = 0x01;
+    registers.l = 0x4D;
+    pc = 0x100;
+    sp = 0xFFFE;
 
-bool Cpu::loadBoot()
-{
-    if (BootRomEnabled)
-        return loadROM("D:\\Git\\GameBoy-Emulator\\roms\\boot\\dmg_boot.bin");
-    else
-    {
-        registers.a = 0x01;
-        registers.f = 0xB0;
-        registers.b = 0x00;
-        registers.c = 0x13;
-        registers.d = 0x00;
-        registers.e = 0xD8;
-        registers.h = 0x01;
-        registers.l = 0x4D;
-        pc = 0x100;
-        sp = 0xFFFE;
-
-        memory[0xFF00] = 0xCF;
-        memory[0xFF01] = 0x00;
-        memory[0xFF02] = 0x7E;
-        memory[0xFF04] = 0xAB;
-        memory[0xFF05] = 0x00;
-        memory[0xFF06] = 0x00;
-        memory[0xFF07] = 0xF8;
-        memory[0xFF0F] = 0xE1;
-        memory[0xFF10] = 0x80;
-        memory[0xFF11] = 0xBF;
-        memory[0xFF12] = 0xF3;
-        memory[0xFF13] = 0xFF;
-        memory[0xFF14] = 0xBF;
-        memory[0xFF16] = 0x3F;
-        memory[0xFF17] = 0x00;
-        memory[0xFF18] = 0xFF;
-        memory[0xFF19] = 0xBF;
-        memory[0xFF1A] = 0x7F;
-        memory[0xFF1B] = 0xFF;
-        memory[0xFF1C] = 0x9F;
-        memory[0xFF1D] = 0xFF;
-        memory[0xFF1E] = 0xBF;
-        memory[0xFF20] = 0xFF;
-        memory[0xFF21] = 0x00;
-        memory[0xFF22] = 0x00;
-        memory[0xFF23] = 0xBF;
-        memory[0xFF24] = 0x77;
-        memory[0xFF25] = 0xF3;
-        memory[0xFF26] = 0xF1;
-        memory[0xFF40] = 0x91;
-        memory[0xFF41] = 0x85;
-        memory[0xFF42] = 0x00;
-        memory[0xFF43] = 0x00;
-        memory[0xFF44] = 0x00;
-        memory[0xFF45] = 0x00;
-        memory[0xFF46] = 0xFF;
-        memory[0xFF47] = 0xFC;
-        // memory[0xFF48] = 0xCF;
-        // memory[0xFF49] = 0xCF;
-        memory[0xFF4A] = 0x00;
-        memory[0xFF4B] = 0x00;
-        return true;
-    }
+    return memory->loadROM(filename);
 }
 
 void Cpu::Tick()
@@ -237,43 +147,43 @@ void Cpu::UpdateTimer()
 {
     if (CycleCounter % 64 == 0)
     {
-        memory[0xFF04] = memory[0xFF04] + 1; // INC DIV
+        memory->IncDivRegister();
     }
-    if (memory[0xFF07] & 0x4) // Check if TIMA enabled
+    if (memory->readMemory(0xFF07) & 0x4) // Check if TIMA enabled
     {
-        switch (memory[0xFF07] & 0x3) // Check clock select
+        switch (memory->readMemory(0xFF07) & 0x3) // Check clock select
         {
         case 0b00: // INC TIMA every 256 M-Cycles
             if (CycleCounter % 256 == 0)
             {
-                memory[0xFF05] = memory[0xFF05] + 1;
+                memory->writeMemory(0xFF05, memory->readMemory(0xFF05) + 1);
             }
             break;
         case 0b01: // INC TIMA every 4 M-Cycles
             if (CycleCounter % 4 == 0)
             {
-                memory[0xFF05] = memory[0xFF05] + 1;
+                memory->writeMemory(0xFF05, memory->readMemory(0xFF05) + 1);
             }
             break;
         case 0b10: // INC TIMA every 16 M-Cycles
             if (CycleCounter % 16 == 0)
             {
-                memory[0xFF05] = memory[0xFF05] + 1;
+                memory->writeMemory(0xFF05, memory->readMemory(0xFF05) + 1);
             }
             break;
         case 0b11: // INC TIMA every 64 M-Cycles
             if (CycleCounter % 64 == 0)
             {
-                memory[0xFF05] = memory[0xFF05] + 1;
+                memory->writeMemory(0xFF05, memory->readMemory(0xFF05) + 1);
             }
             break;
         default:
             break;
         }
-        if (memory[0xFF05] == 0) // TIMA overflow
+        if (memory->readMemory(0xFF05) == 0) // TIMA overflow
         {
-            memory[0xFF05] = memory[0xFF06];
-            memory[0xFF0F] = memory[0xFF0F] | 0b00000100; // Request TIMER interrupt
+            memory->writeMemory(0xFF05, memory->readMemory(0xFF06));
+            memory->writeMemory(0xFF0F, memory->readMemory(0xFF0F) | 0b00000100); // Request TIMER interrupt
         }
     }
 }
@@ -1850,8 +1760,6 @@ void Cpu::OP_EI()
 {
     PendingInstructions.push([this]
                              { RunningMode = Cpu::ENABLEIME; });
-    
-
 }
 
 uint8_t Cpu::getRegister8(uint8_t Register)

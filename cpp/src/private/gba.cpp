@@ -1,7 +1,9 @@
 #include "../public/gba.h"
 
 Gba::Gba(){
-    cpu = new Cpu();    
+    memory = new Memory();
+    cpu = new Cpu(memory);
+    ppu = new Ppu(memory, WINDOW_W, WINDOW_H);
 }
 
 bool Gba::loadROM(char const *filename){
@@ -11,9 +13,7 @@ bool Gba::loadROM(char const *filename){
     return RomLoaded;
 }
 
-void Gba::Start(){
-    while (1)
-    {
-        cpu->Tick();
-    }
+void Gba::Tick(){
+    cpu->Tick();
+    //ppu->Tick();
 }
