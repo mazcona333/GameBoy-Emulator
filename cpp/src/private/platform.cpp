@@ -3,8 +3,10 @@
 
 #define NO_STDIO_REDIRECT
 
-Platform::Platform(int16_t WinW, int16_t WinH, int16_t TextureW, int16_t TextureH)
+Platform::Platform(int16_t WinW, int16_t WinH, int16_t TextureW, int16_t TextureH, int16_t Pitch)
 {
+    TexturePitch = Pitch;
+
     SDL_Init(SDL_INIT_VIDEO);
 
     window = SDL_CreateWindow("GBA",
@@ -26,9 +28,9 @@ Platform::~Platform()
     SDL_Quit();
 }
 
-void Platform::Update(uint32_t *RawPixels, int16_t ResW)
+void Platform::Update(void const *RawPixels)
 {
-    SDL_UpdateTexture(texture, nullptr, RawPixels, sizeof(RawPixels[0]) * ResW);
+    SDL_UpdateTexture(texture, nullptr, RawPixels, TexturePitch);
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
     SDL_RenderPresent(renderer);

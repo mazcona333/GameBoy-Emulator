@@ -10,14 +10,16 @@ class SDL_Texture;
 class Platform
 {
 public:
-    Platform(int16_t WinW, int16_t WinH, int16_t TextureW, int16_t TextureH);
+    Platform(int16_t WinW, int16_t WinH, int16_t TextureW, int16_t TextureH, int16_t Pitch);
     ~Platform();
-    void Update(uint32_t* RawPixels, int16_t ResW);
+    void Update(void const *RawPixels);
     bool ProcessInput(uint8_t* Input);
 private:
     SDL_Window *window{};
     SDL_Renderer *renderer{};
     SDL_Texture *texture{};
+
+    uint16_t TexturePitch;
 
     void StartDownSet(uint8_t* Input, bool Down);
     void SelectUpSet(uint8_t* Input, bool Down);
