@@ -3,7 +3,7 @@
 Gba::Gba(){
     memory = new Memory();
     cpu = new Cpu(memory);
-    ppu = new Ppu(memory, WINDOW_W, WINDOW_H);
+    ppu = new Ppu(memory);
 }
 
 bool Gba::loadROM(char const *filename){
@@ -15,5 +15,13 @@ bool Gba::loadROM(char const *filename){
 
 void Gba::Tick(){
     cpu->Tick();
-    //ppu->Tick();
+    ppu->Tick();
+}
+
+void Gba::setInput(uint8_t input){
+    memory->setInput(input);
+}
+
+uint32_t* Gba::getDisplay(){
+    return ppu->getDisplay();
 }

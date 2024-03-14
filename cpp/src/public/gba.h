@@ -14,6 +14,8 @@ public:
     Gba();
     bool loadROM(char const *filename);
     void Tick();
+    void setInput(uint8_t input);
+    uint32_t* getDisplay();
 private:
     Cpu* cpu;
     Memory* memory;
