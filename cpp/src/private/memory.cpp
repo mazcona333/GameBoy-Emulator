@@ -133,7 +133,7 @@ bool Memory::loadCartridge(char const *filename)
                 }
             }
             
-            cartridgeROM[i / 0x3FFF][i % 0x3FFF] = c;
+            cartridgeROM[i / (0x3FFF+1)][i % (0x3FFF+1)] = c;
         }
 
         if (CartridgeType == 0)
