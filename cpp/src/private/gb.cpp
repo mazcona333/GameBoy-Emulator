@@ -1,6 +1,6 @@
-#include "../public/gba.h"
+#include "../public/gb.h"
 
-Gba::Gba(bool Debug)
+Gb::Gb(bool Debug)
 {
     memory = new Memory(Debug);
     if (Debug)
@@ -10,7 +10,7 @@ Gba::Gba(bool Debug)
     ppu = new Ppu(memory);
 }
 
-bool Gba::loadROM(char const *filename)
+bool Gb::loadROM(char const *filename)
 {
     bool RomLoaded = false;
     RomLoaded = cpu->loadROM(filename);
@@ -18,18 +18,18 @@ bool Gba::loadROM(char const *filename)
     return RomLoaded;
 }
 
-void Gba::Tick()
+void Gb::Tick()
 {
     cpu->Tick();
     ppu->Tick();
 }
 
-void Gba::setInput(uint8_t input)
+void Gb::setInput(uint8_t input)
 {
     memory->setInput(input);
 }
 
-uint32_t *Gba::getDisplay()
+uint32_t *Gb::getDisplay()
 {
     return ppu->getDisplay();
 }

@@ -1,5 +1,5 @@
-#ifndef GBA_H
-#define GBA_H
+#ifndef GB_H
+#define GB_H
 
 #include "cpu.h"
 #include "cpuDebug.h"
@@ -9,10 +9,10 @@
 #define WINDOW_W 160*2
 #define WINDOW_H 144*2
 
-class Gba
+class Gb
 {
 public:
-    Gba(bool Debug = false);
+    Gb(bool Debug = false);
     bool loadROM(char const *filename);
     void Tick();
     void setInput(uint8_t input);
@@ -23,4 +23,4 @@ private:
     Ppu* ppu;
 };
 
-#endif // GBA_H
+#endif // GB_H
