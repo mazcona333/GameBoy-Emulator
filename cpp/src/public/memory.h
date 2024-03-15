@@ -9,7 +9,7 @@ typedef uint8_t RAMbank[0x1FFF + 1];
 class Memory
 {
 public:
-    Memory();
+    Memory(bool Debug = false);
 
     bool loadROM(char const *filename);
 
@@ -37,6 +37,8 @@ private:
     uint8_t readMemoryRAMBank(uint16_t Adress);
     void writeMemoryRAMBank(uint16_t Adress, uint8_t Value);
     void writeMBCRegister(uint16_t Adress, uint8_t Value);
+
+    bool DebugMode = false;
 };
 
 #endif // MEMORY_H

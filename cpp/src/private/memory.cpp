@@ -4,12 +4,16 @@
 #include <iostream>
 #include <fstream>
 
-Memory::Memory()
+Memory::Memory(bool Debug)
 {
+    DebugMode = Debug;
 }
 // TODO Video RAM, WRAM, OAM
 uint8_t Memory::readMemory(uint16_t Adress)
 {
+    if(DebugMode){
+        return memory[Adress];
+    }
     if (Adress < 0x0000 || Adress > 0xFFFF)
     {
         std::cout << "Attempted to read memory out of range\n";
@@ -43,6 +47,10 @@ uint8_t Memory::readMemory(uint16_t Adress)
 
 void Memory::writeMemory(uint16_t Adress, uint8_t Value)
 {
+    if(DebugMode){
+        memory[Adress] = Value;
+        return;
+    }
     if (Adress < 0x0000 || Adress > 0xFFFF)
     {
         std::cout << "Attempted to write memory out of range\n";
@@ -132,8 +140,10 @@ bool Memory::loadCartridge(char const *filename)
                     break;
                 }
             }
-            
-            cartridgeROM[i / (0x3FFF+1)][i % (0x3FFF+1)] = c;
+            if(DebugMode)
+                memory[i] = c;
+            else
+                cartridgeROM[i / (0x3FFF+1)][i % (0x3FFF+1)] = c;
         }
 
         if (CartridgeType == 0)

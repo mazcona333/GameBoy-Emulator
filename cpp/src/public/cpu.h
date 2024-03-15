@@ -32,7 +32,7 @@ public:
     void Tick();
     void RunNextOP();
     bool loadROM(char const *filename);
-private:
+protected:
     Memory* memory;
 
     std::queue<std::function<void()>> PendingInstructions;
@@ -57,8 +57,6 @@ private:
     uint16_t pc = 0;
     uint16_t sp = 0;
     uint8_t ime = 0;
-
-    //uint8_t memory[0xFFFF+1] = {0};
 
     uint8_t readMemory(uint16_t Adress);
     void writeMemory(uint16_t Adress, uint8_t Value);

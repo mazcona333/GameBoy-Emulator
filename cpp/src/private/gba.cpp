@@ -1,7 +1,7 @@
 #include "../public/gba.h"
 
 Gba::Gba(){
-    memory = new Memory();
+    memory = new Memory(true);
     cpu = new Cpu(memory);
     ppu = new Ppu(memory);
 }
