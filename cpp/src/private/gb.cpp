@@ -20,8 +20,10 @@ bool Gb::loadROM(char const *filename)
 
 void Gb::Tick()
 {
-    cpu->Tick();
+    //if(CycleCounter % 4 == 0)
+        cpu->Tick();
     ppu->Tick();
+    CycleCounter++;
 }
 
 void Gb::setInput(uint8_t input)

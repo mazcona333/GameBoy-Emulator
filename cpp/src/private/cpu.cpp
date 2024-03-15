@@ -43,6 +43,7 @@ void Cpu::Tick()
             PendingInstructions.front()();
             PendingInstructions.pop();
         }
+        HandleInterrupt();
         if (PendingInstructions.size() == 0)
         {
             FetchNextOP();
@@ -51,6 +52,7 @@ void Cpu::Tick()
 
     case CpuMode::HALT:
     case CpuMode::STOP:
+        HandleInterrupt();
         break;
 
     case CpuMode::ENABLEIME:
@@ -61,6 +63,7 @@ void Cpu::Tick()
             PendingInstructions.front()();
             PendingInstructions.pop();
         }
+        HandleInterrupt();
         if (PendingInstructions.size() == 0)
         {
             FetchNextOP();
@@ -70,7 +73,6 @@ void Cpu::Tick()
     default:
         break;
     }
-    HandleInterrupt();
     UpdateTimer();
 }
 

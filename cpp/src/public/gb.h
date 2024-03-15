@@ -21,6 +21,7 @@ private:
     Cpu* cpu;
     Memory* memory;
     Ppu* ppu;
+    uint8_t CycleCounter = 0;
 };
 
 #endif // GB_H
