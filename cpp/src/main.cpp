@@ -8,7 +8,7 @@ int main(int argc, char const *argv[])
 {
     Gb *gb = new Gb();
     //Platform* platform = new Platform(WINDOW_W, WINDOW_H, RES_W, RES_H, sizeof(gb->getDisplay()[0]) * RES_W);
-    //gb->loadROM("..\\..\\roms\\blargg\\cpu_instrs\\cpu_instrs.gb");               // Passed all tests
+    gb->loadROM("..\\..\\roms\\blargg\\cpu_instrs\\cpu_instrs.gb");               // Passed all tests
     //gb->loadROM("..\\..\\roms\\blargg\\instr_timing\\instr_timing.gb");           // Timer doesn't  work properly     Failed #2
     //gb->loadROM("..\\..\\roms\\blargg\\interrupt_time\\interrupt_time.gb");       // Nothing
     //gb->loadROM("..\\..\\roms\\blargg\\mem_timing\\mem_timing.gb");               // 01:ok  02:01  03:01   Failed 2 tests.

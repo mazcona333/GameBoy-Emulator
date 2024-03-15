@@ -8,42 +8,67 @@ Memory::Memory(bool Debug)
 {
     DebugMode = Debug;
 }
-// TODO Video RAM, WRAM, OAM
+
 uint8_t Memory::readMemory(uint16_t Adress)
 {
     if (DebugMode)
     {
         return memory[Adress];
     }
-    if (Adress < 0x0000 || Adress > 0xFFFF)
+
+    if (Adress >= 0x0000 && Adress <= 0x3FFF) // ROM bank 00
+    {
+        return readMemoryROMBank0(Adress);
+    }
+    else if (Adress >= 0x4000 && Adress <= 0x7FFF) // ROM bank 01
+    {
+        return readMemoryROMBankN(Adress - 0x4000);
+    }
+    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // TODO VRAM
+    {
+        return memory[Adress];
+    }
+    else if (Adress >= 0xA000 && Adress <= 0xBFFF) // External RAM
+    {
+        return readMemoryRAMBank(Adress - 0xA000);
+    }
+    else if (Adress >= 0xC000 && Adress <= 0xCFFF) // WRAM
+    {
+        return memory[Adress];
+    }
+    else if (Adress >= 0xD000 && Adress <= 0xDFFF) // WRAM  TODO CGB
+    {
+        return memory[Adress];
+    }
+    else if (Adress >= 0xE000 && Adress <= 0xFDFF) // ECHO RAM
+    {
+        return memory[Adress - 0x2000];
+    }
+    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // TODO OAM
+    {
+        return memory[Adress];
+    }
+    else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE
+    {
+        return 0x00;
+    }
+    else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
+    {
+        return memory[Adress];
+    }
+    else if (Adress >= 0xFF80 && Adress <= 0xFFFE) // HIGH RAM
+    {
+        return memory[Adress];
+    }
+    else if (Adress >= 0xFFFF && Adress <= 0xFFFF) // IE
+    {
+        return memory[Adress];
+    }
+    else
     {
         std::cout << "Attempted to read memory out of range\n";
         throw std::out_of_range("Attempted to read memory out of range");
     }
-
-    if (Adress >= 0x0000 && Adress <= 0x3FFF)
-    { // ROM bank 00
-        return readMemoryROMBank0(Adress);
-    }
-
-    if (Adress >= 0x4000 && Adress <= 0x7FFF)
-    { // ROM bank 01
-        return readMemoryROMBankN(Adress - 0x4000);
-    }
-
-    if (Adress >= 0xA000 && Adress <= 0xBFFF)
-    { // External RAM
-        return readMemoryRAMBank(Adress - 0xA000);
-    }
-
-    if (Adress >= 0xE000 && Adress <= 0xFDFF)
-        return memory[Adress - 0x2000];
-
-    if (Adress >= 0xFEA0 && Adress <= 0xFEFF)
-        return 0x00;
-    // return memory[Adress];
-
-    return memory[Adress];
 }
 
 void Memory::writeMemory(uint16_t Adress, uint8_t Value)
@@ -53,53 +78,72 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
         memory[Adress] = Value;
         return;
     }
-    if (Adress < 0x0000 || Adress > 0xFFFF)
+
+    if (Adress >= 0x0000 && Adress <= 0x3FFF) // ROM bank 00
+    {
+        writeMBCRegister(Adress, Value);
+    }
+    else if (Adress >= 0x4000 && Adress <= 0x7FFF) // ROM bank 01
+    {
+        writeMBCRegister(Adress, Value);
+    }
+    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // TODO VRAM
+    {
+        memory[Adress] = Value;
+    }
+    else if (Adress >= 0xA000 && Adress <= 0xBFFF) // External RAM
+    {
+        writeMemoryRAMBank(Adress - 0xA000, Value);
+    }
+    else if (Adress >= 0xC000 && Adress <= 0xCFFF) // WRAM
+    {
+        memory[Adress] = Value;
+    }
+    else if (Adress >= 0xD000 && Adress <= 0xDFFF) // WRAM  TODO CGB
+    {
+        memory[Adress] = Value;
+    }
+    else if (Adress >= 0xE000 && Adress <= 0xFDFF) // ECHO RAM
+    {
+        memory[Adress - 0x2000] = Value;
+    }
+    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // TODO OAM
+    {
+        memory[Adress] = Value;
+    }
+    else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE
+    {
+        std::cout << "Attempted to write not usable memory\n";
+        throw std::out_of_range("Attempted to write not usable memory");
+        /// memory[Adress] = Value;
+    }
+    else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
+    {
+        if (Adress == 0xFF02 && Value == 0x81) // SC
+        {
+            std::cout << (char)readMemory(0xFF01); // SB
+        }
+
+        if (Adress == 0xFF04) // DIV
+        {
+            Value = 0;
+        }
+
+        memory[Adress] = Value;
+    }
+    else if (Adress >= 0xFF80 && Adress <= 0xFFFE) // HIGH RAM
+    {
+        memory[Adress] = Value;
+    }
+    else if (Adress >= 0xFFFF && Adress <= 0xFFFF) // IE
+    {
+        memory[Adress] = Value;
+    }
+    else
     {
         std::cout << "Attempted to write memory out of range\n";
         throw std::out_of_range("Attempted to write memory out of range");
     }
-
-    if (Adress >= 0x0000 && Adress <= 0x3FFF)
-    { // ROM bank 00
-        writeMBCRegister(Adress, Value);
-    }
-
-    if (Adress >= 0x4000 && Adress <= 0x7FFF)
-    { // ROM bank 01
-        writeMBCRegister(Adress, Value);
-    }
-
-    if (Adress >= 0xA000 && Adress <= 0xBFFF)
-    { // External RAM
-        writeMemoryRAMBank(Adress - 0xA000, Value);
-        return;
-    }
-
-    if ((Adress >= 0xE000 && Adress <= 0xFDFF) || (Adress >= 0xE000 && Adress <= 0xFDFF))
-    { // Echo RAM
-        memory[Adress - 0x2000] = Value;
-        return;
-    }
-
-    if (Adress >= 0xFEA0 && Adress <= 0xFEFF)
-    { // Not Usable TODO
-        std::cout << "Attempted to write not usable memory\n";
-        throw std::out_of_range("Attempted to write not usable memory");
-        /// memory[Adress] = Value;
-        return;
-    }
-
-    if (Adress == 0xFF02 && Value == 0x81) // SC
-    {
-        std::cout << (char)readMemory(0xFF01); // SB
-    }
-
-    if (Adress == 0xFF04) // DIV
-    {
-        Value = 0;
-    }
-
-    memory[Adress] = Value;
 }
 
 bool Memory::loadCartridge(char const *filename)
