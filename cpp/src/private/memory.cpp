@@ -11,7 +11,8 @@ Memory::Memory(bool Debug)
 // TODO Video RAM, WRAM, OAM
 uint8_t Memory::readMemory(uint16_t Adress)
 {
-    if(DebugMode){
+    if (DebugMode)
+    {
         return memory[Adress];
     }
     if (Adress < 0x0000 || Adress > 0xFFFF)
@@ -40,14 +41,15 @@ uint8_t Memory::readMemory(uint16_t Adress)
 
     if (Adress >= 0xFEA0 && Adress <= 0xFEFF)
         return 0x00;
-        // return memory[Adress];
+    // return memory[Adress];
 
     return memory[Adress];
 }
 
 void Memory::writeMemory(uint16_t Adress, uint8_t Value)
 {
-    if(DebugMode){
+    if (DebugMode)
+    {
         memory[Adress] = Value;
         return;
     }
@@ -140,10 +142,10 @@ bool Memory::loadCartridge(char const *filename)
                     break;
                 }
             }
-            if(DebugMode)
+            if (DebugMode || CartridgeType == 0)
                 memory[i] = c;
             else
-                cartridgeROM[i / (0x3FFF+1)][i % (0x3FFF+1)] = c;
+                cartridgeROM[i / (0x3FFF + 1)][i % (0x3FFF + 1)] = c;
         }
 
         if (CartridgeType == 0)
@@ -151,7 +153,10 @@ bool Memory::loadCartridge(char const *filename)
         }
         else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
         {
-            writeMBCRegister(0x0000, 0); writeMBCRegister(0x2000, 0); writeMBCRegister(0x4000, 0); writeMBCRegister(0x6000, 0);
+            writeMBCRegister(0x0000, 0);
+            writeMBCRegister(0x2000, 0);
+            writeMBCRegister(0x4000, 0);
+            writeMBCRegister(0x6000, 0);
         }
         else
         {
@@ -237,7 +242,7 @@ uint8_t Memory::readMemoryROMBank0(uint16_t Adress)
 {
     uint8_t nBank = 0;
     if (CartridgeType == 0)
-        return cartridgeROM[nBank][Adress];
+        return memory[Adress];
     else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
     {
         if (nRomBanks < 64)
@@ -259,7 +264,7 @@ uint8_t Memory::readMemoryROMBankN(uint16_t Adress)
 {
     uint8_t nBank = 1;
     if (CartridgeType == 0)
-        return cartridgeROM[1][Adress];
+        return memory[Adress + 0x4000];
     else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
     {
         if (nRomBanks < 64)
@@ -338,7 +343,7 @@ void Memory::writeMemoryRAMBank(uint16_t Adress, uint8_t Value)
 void Memory::writeMBCRegister(uint16_t Adress, uint8_t Value)
 {
     if (CartridgeType == 0)
-        return;
+        memory[Adress] = Value;
     else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
     {
         if (Adress >= 0x0000 && Adress <= 0x1FFF)
@@ -350,7 +355,7 @@ void Memory::writeMBCRegister(uint16_t Adress, uint8_t Value)
             uint8_t NewValue = Value & 0x1F; // 5-bit register
             if (NewValue == 0)               // If the register is set to 0, it is set to 1 instead
                 NewValue = 1;
-            NewValue = NewValue & (nRomBanks-1); // Mask to take only the necessary bits for the number of banks
+            NewValue = NewValue & (nRomBanks - 1); // Mask to take only the necessary bits for the number of banks
             memory[0x2000] = NewValue;
         }
         if (Adress >= 0x4000 && Adress <= 0x5FFF)
