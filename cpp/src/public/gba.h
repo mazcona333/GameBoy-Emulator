@@ -2,6 +2,7 @@
 #define GBA_H
 
 #include "cpu.h"
+#include "cpuDebug.h"
 #include "memory.h"
 #include "ppu.h"
 
@@ -11,7 +12,7 @@
 class Gba
 {
 public:
-    Gba();
+    Gba(bool Debug = false);
     bool loadROM(char const *filename);
     void Tick();
     void setInput(uint8_t input);
