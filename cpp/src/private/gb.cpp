@@ -31,7 +31,7 @@ void Gb::setInput(uint8_t input)
     memory->setInput(input);
 }
 
-uint32_t *Gb::getDisplay()
+uint8_t *Gb::getDisplay()
 {
     return ppu->getDisplay();
 }

@@ -19,6 +19,11 @@ public:
     void IncDivRegister();
 
     void setInput(uint8_t input);
+    
+    void setLY(uint8_t Value);
+    void setPPUMode(uint8_t Value);
+    uint8_t getPPUMode();
+    void OAMDMATransfer(uint8_t AdressLow);
 private:
     uint8_t memory[0xFFFF+1] = {0};
 
@@ -37,6 +42,14 @@ private:
     uint8_t readMemoryRAMBank(uint16_t Adress);
     void writeMemoryRAMBank(uint16_t Adress, uint8_t Value);
     void writeMBCRegister(uint16_t Adress, uint8_t Value);
+
+    void writeMemoryIO(uint16_t Adress, uint8_t Value);
+    uint8_t readMemoryIO(uint16_t Adress);
+
+    void writeMemoryVRAM(uint16_t Adress, uint8_t Value);
+    uint8_t readMemoryVRAM(uint16_t Adress);
+    void writeMemoryOAM(uint16_t Adress, uint8_t Value);
+    uint8_t readMemoryOAM(uint16_t Adress);
 
     bool DebugMode = false;
 };

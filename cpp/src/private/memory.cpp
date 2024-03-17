@@ -26,7 +26,7 @@ uint8_t Memory::readMemory(uint16_t Adress)
     }
     else if (Adress >= 0x8000 && Adress <= 0x9FFF) // TODO VRAM
     {
-        return memory[Adress];
+        return readMemoryVRAM(Adress);
     }
     else if (Adress >= 0xA000 && Adress <= 0xBFFF) // External RAM
     {
@@ -46,7 +46,7 @@ uint8_t Memory::readMemory(uint16_t Adress)
     }
     else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // TODO OAM
     {
-        return memory[Adress];
+        return readMemoryOAM(Adress);
     }
     else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE
     {
@@ -54,7 +54,7 @@ uint8_t Memory::readMemory(uint16_t Adress)
     }
     else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
     {
-        return memory[Adress];
+        return readMemoryIO(Adress);
     }
     else if (Adress >= 0xFF80 && Adress <= 0xFFFE) // HIGH RAM
     {
@@ -89,7 +89,7 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     }
     else if (Adress >= 0x8000 && Adress <= 0x9FFF) // TODO VRAM
     {
-        memory[Adress] = Value;
+        writeMemoryVRAM(Adress, Value);
     }
     else if (Adress >= 0xA000 && Adress <= 0xBFFF) // External RAM
     {
@@ -109,7 +109,7 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     }
     else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // TODO OAM
     {
-        memory[Adress] = Value;
+        writeMemoryOAM(Adress, Value);
     }
     else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE
     {
@@ -119,17 +119,7 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     }
     else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
     {
-        if (Adress == 0xFF02 && Value == 0x81) // SC
-        {
-            std::cout << (char)readMemory(0xFF01); // SB
-        }
-
-        if (Adress == 0xFF04) // DIV
-        {
-            Value = 0;
-        }
-
-        memory[Adress] = Value;
+        writeMemoryIO(Adress, Value);
     }
     else if (Adress >= 0xFF80 && Adress <= 0xFFFE) // HIGH RAM
     {
@@ -417,4 +407,110 @@ void Memory::writeMBCRegister(uint16_t Adress, uint8_t Value)
         std::cout << "MBC not supported\n";
         throw std::length_error("MBC not supported");
     }
+}
+
+void Memory::writeMemoryIO(uint16_t Adress, uint8_t Value)
+{
+    if (Adress == 0xFF02 && Value == 0x81) // SC
+    {
+        std::cout << (char)readMemory(0xFF01); // SB
+    }
+
+    if (Adress == 0xFF04) // DIV
+    {
+        Value = 0;
+    }
+
+    {                         // LCD
+        if (Adress == 0xFF41) // STAT 7 ignored, 2,1,0 read only
+        {
+            Value = (Value & 0b01111000) & memory[0xFF41];
+        }
+        else if (Adress == 0xFF44) // LY READ ONLY
+        {
+            return;
+        }
+    }
+
+    memory[Adress] = Value;
+}
+
+void Memory::setLY(uint8_t Value)
+{
+    memory[0xFF44] = Value;
+    if (Value == memory[0xFF45])
+    {
+        memory[0xFF41] = memory[0xFF41] | 0b00000100; // Set LYC == LY
+        memory[0xFF0F] = memory[0xFF0F] | 0b00000010; // Interrupt requested
+    }
+    else
+    {
+        memory[0xFF41] = memory[0xFF41] & 0b11111011; // Clear LYC == LY
+    }
+}
+void Memory::setPPUMode(uint8_t Value)
+{
+    memory[0xFF41] = memory[0xFF41] | (Value & 0b00000011);
+}
+uint8_t Memory::getPPUMode()
+{
+    return memory[0xFF41] & 0b00000011;
+}
+
+uint8_t Memory::readMemoryIO(uint16_t Adress)
+{
+    return memory[Adress];
+}
+
+void Memory::writeMemoryVRAM(uint16_t Adress, uint8_t Value)
+{
+    if (getPPUMode() != 3)
+    {
+        memory[Adress] = Value;
+    }
+    else
+    {
+        return;
+    }
+}
+
+uint8_t Memory::readMemoryVRAM(uint16_t Adress)
+{
+    if (getPPUMode() != 3)
+    {
+        return memory[Adress];
+    }
+    else
+    {
+        return 0xFF;
+    }
+}
+
+void Memory::writeMemoryOAM(uint16_t Adress, uint8_t Value)
+{
+    if (getPPUMode() <= 1)
+    {
+        memory[Adress] = Value;
+    }
+    else
+    {
+        return;
+    }
+}
+
+uint8_t Memory::readMemoryOAM(uint16_t Adress)
+{
+    if (getPPUMode() <= 1)
+    {
+        return memory[Adress];
+    }
+    else
+    {
+        return 0xFF;
+    }
+}
+
+void Memory::OAMDMATransfer(uint8_t AdressLow)
+{
+    memory[0xFE00 + AdressLow] = memory[(memory[0xFF46] << 8) + AdressLow];
 }

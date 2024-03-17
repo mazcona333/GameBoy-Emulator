@@ -13,6 +13,8 @@ uint8_t Cpu::readMemory(uint16_t Adress)
 void Cpu::writeMemory(uint16_t Adress, uint8_t Value)
 {
     memory->writeMemory(Adress, Value);
+    if(Adress == 0xFF46)
+        RunningMode = CpuMode::OAMDMATRANSFER;
 }
 
 bool Cpu::loadROM(char const *filename)
@@ -68,6 +70,12 @@ void Cpu::Tick()
         {
             FetchNextOP();
         }
+        break;
+    case CpuMode::OAMDMATRANSFER:
+        memory->OAMDMATransfer(OAMDMATransferCounter);
+        OAMDMATransferCounter++;
+        if(OAMDMATransferCounter % 0xA == 0)
+            RunningMode = CpuMode::NORMAL;
         break;
 
     default:

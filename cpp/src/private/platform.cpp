@@ -9,7 +9,7 @@ Platform::Platform(int16_t WinW, int16_t WinH, int16_t TextureW, int16_t Texture
 
     SDL_Init(SDL_INIT_VIDEO);
 
-    window = SDL_CreateWindow("GBA",
+    window = SDL_CreateWindow("GB",
                               SDL_WINDOWPOS_CENTERED,
                               SDL_WINDOWPOS_CENTERED,
                               WinW, WinH, SDL_WINDOW_SHOWN);

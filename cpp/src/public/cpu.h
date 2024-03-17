@@ -37,7 +37,7 @@ protected:
 
     std::queue<std::function<void()>> PendingInstructions;
 
-    enum CpuMode { NORMAL, HALT, STOP, ENABLEIME };
+    enum CpuMode { NORMAL, HALT, STOP, ENABLEIME, OAMDMATRANSFER };
 
     CpuMode RunningMode = CpuMode::NORMAL;
 
@@ -174,6 +174,7 @@ protected:
     uint16_t popStack();
 
     uint8_t pendingEI = false;
+    uint8_t OAMDMATransferCounter = 0x00;
 };
 
 #endif // CPU_H

@@ -7,7 +7,7 @@
 int main(int argc, char const *argv[])
 {
     Gb *gb = new Gb();
-    //Platform* platform = new Platform(WINDOW_W, WINDOW_H, RES_W, RES_H, sizeof(gb->getDisplay()[0]) * RES_W);
+    Platform* platform = new Platform(WINDOW_W, WINDOW_H, RES_W, RES_H, sizeof(gb->getDisplay()[0]) * RES_W * 3);
     gb->loadROM("..\\..\\roms\\blargg\\cpu_instrs\\cpu_instrs.gb");               // Passed all tests
     //gb->loadROM("..\\..\\roms\\blargg\\instr_timing\\instr_timing.gb");           // Timer doesn't  work properly     Failed #2
     //gb->loadROM("..\\..\\roms\\blargg\\interrupt_time\\interrupt_time.gb");       // Nothing
@@ -22,11 +22,11 @@ int main(int argc, char const *argv[])
     auto lastCycleTime = std::chrono::high_resolution_clock::now();
 
     bool quit = false;
+    uint8_t input = 207;
 
     while (!quit)
     {
-        uint8_t input = 207;
-        //quit = platform->ProcessInput(&input);
+        quit = platform->ProcessInput(&input);
         gb->setInput(input);
 
         auto currentTime = std::chrono::high_resolution_clock::now();
@@ -38,7 +38,7 @@ int main(int argc, char const *argv[])
             lastCycleTime = currentTime;
             gb->Tick();
             //std::cout << dt << "\n";
-            //platform->Update(gb->getDisplay());
+            platform->Update(gb->getDisplay());
         }
     }
     return 0;
