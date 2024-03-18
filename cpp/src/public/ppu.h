@@ -3,6 +3,7 @@
 
 #include "memory.h"
 #include <queue>
+#include <functional>
 
 #define RES_W 160
 #define RES_H 144
@@ -48,21 +49,24 @@ private:
 class Ppu
 {
 public:
-    Ppu(Memory *mem);
+    Ppu(Memory *mem, std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplayFunction);
     void Tick();
     uint8_t *getDisplay();
 
 private:
     Memory *memory;
+    std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplay;
 
-    uint8_t Display[RES_W * RES_H * 3] = {0};
+    uint8_t Display[RES_W * RES_H * 4] = {0};
     uint8_t hPixelDrawing = 0;
 
-    uint8_t DotCounter = 0;
+    uint16_t DotCounter = 0;
     uint8_t StallCounter = 0;
 
     PpuMode getPPUMode();
     void setPPUMode(PpuMode Mode);
+    bool Disabled = false;
+    bool WaitFrame = false;
 
     uint8_t getLY();
     void setLY(uint8_t LY);

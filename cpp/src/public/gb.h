@@ -12,7 +12,7 @@
 class Gb
 {
 public:
-    Gb(bool Debug = false);
+    Gb(std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplayFunction, bool Debug = false);
     bool loadROM(char const *filename);
     void Tick();
     void setInput(uint8_t input);

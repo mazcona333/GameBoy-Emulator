@@ -1,13 +1,13 @@
 #include "../public/gb.h"
 
-Gb::Gb(bool Debug)
+Gb::Gb(std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplayFunction, bool Debug)
 {
     memory = new Memory(Debug);
     if (Debug)
         cpu = new CpuDebug(memory);
     else
         cpu = new Cpu(memory);
-    ppu = new Ppu(memory);
+    ppu = new Ppu(memory, UpdateDisplayFunction);
 }
 
 bool Gb::loadROM(char const *filename)
@@ -20,7 +20,7 @@ bool Gb::loadROM(char const *filename)
 
 void Gb::Tick()
 {
-    //if(CycleCounter % 4 == 0)
+    if(CycleCounter % 4 == 0)
         cpu->Tick();
     ppu->Tick();
     CycleCounter++;

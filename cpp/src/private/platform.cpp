@@ -9,15 +9,15 @@ Platform::Platform(int16_t WinW, int16_t WinH, int16_t TextureW, int16_t Texture
 
     SDL_Init(SDL_INIT_VIDEO);
 
-    window = SDL_CreateWindow("GB",
-                              SDL_WINDOWPOS_CENTERED,
-                              SDL_WINDOWPOS_CENTERED,
-                              WinW, WinH, SDL_WINDOW_SHOWN);
-
+    window = SDL_CreateWindow("GB", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WinW, WinH, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
     texture = SDL_CreateTexture(
-        renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, TextureW, TextureH);
+        renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, TextureW, TextureH);
+
+    ResH = TextureH;
+    ResW = TextureW;
+
+    // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 }
 
 Platform::~Platform()
@@ -28,11 +28,23 @@ Platform::~Platform()
     SDL_Quit();
 }
 
-void Platform::Update(void const *RawPixels)
+void Platform::Update(uint8_t *RawPixels, uint8_t row)
 {
-    SDL_UpdateTexture(texture, nullptr, RawPixels, TexturePitch);
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+    uint8_t *pixels;
+    int pitch;
+    SDL_LockTexture(texture, NULL, (void **)&pixels, &pitch);
+
+    for (size_t col = 0; col < ResW; col++)
+    {
+        pixels[(row * ResW + col) * 4 + 0] = RawPixels[(row * ResW + col) * 4 + 3];
+        pixels[(row * ResW + col) * 4 + 1] = RawPixels[(row * ResW + col) * 4 + 2];
+        pixels[(row * ResW + col) * 4 + 2] = RawPixels[(row * ResW + col) * 4 + 1];
+        pixels[(row * ResW + col) * 4 + 3] = RawPixels[(row * ResW + col) * 4 + 0];
+    }
+
+    SDL_UnlockTexture(texture);
+    // SDL_UpdateTexture(texture, NULL, RawPixels, TexturePitch);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
 }
 

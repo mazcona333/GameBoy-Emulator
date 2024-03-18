@@ -9,7 +9,7 @@ Memory::Memory(bool Debug)
     DebugMode = Debug;
 }
 
-uint8_t Memory::readMemory(uint16_t Adress)
+uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
 {
     if (DebugMode)
     {
@@ -26,7 +26,7 @@ uint8_t Memory::readMemory(uint16_t Adress)
     }
     else if (Adress >= 0x8000 && Adress <= 0x9FFF) // TODO VRAM
     {
-        return readMemoryVRAM(Adress);
+        return readMemoryVRAM(Adress, IsPPU);
     }
     else if (Adress >= 0xA000 && Adress <= 0xBFFF) // External RAM
     {
@@ -50,7 +50,8 @@ uint8_t Memory::readMemory(uint16_t Adress)
     }
     else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE
     {
-        return 0x00;
+        //return 0x00;
+        return memory[Adress];
     }
     else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
     {
@@ -113,9 +114,9 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     }
     else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE
     {
-        std::cout << "Attempted to write not usable memory\n";
-        throw std::out_of_range("Attempted to write not usable memory");
-        /// memory[Adress] = Value;
+        //std::cout << "Attempted to write not usable memory\n";
+        //throw std::out_of_range("Attempted to write not usable memory");
+        memory[Adress] = Value;
     }
     else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
     {
@@ -136,7 +137,7 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     }
 }
 
-bool Memory::loadCartridge(char const *filename)
+bool Memory::loadCartridge(char const *filename, bool boot)
 {
     std::ifstream file(filename, std::ios::binary | std::ios::in);
 
@@ -176,7 +177,7 @@ bool Memory::loadCartridge(char const *filename)
                     break;
                 }
             }
-            if (DebugMode || CartridgeType == 0)
+            if (DebugMode || CartridgeType == 0 || boot)
                 memory[i] = c;
             else
                 cartridgeROM[i / (0x3FFF + 1)][i % (0x3FFF + 1)] = c;
@@ -206,14 +207,16 @@ bool Memory::loadCartridge(char const *filename)
 
 bool Memory::loadROM(char const *filename)
 {
-    return loadCartridge(filename) && loadBoot();
+    bool romLoaded =  loadCartridge(filename);
+    bool bootLoaded = loadBoot();
+    return romLoaded && bootLoaded;
 }
 
 bool Memory::loadBoot()
 {
     // TODO
     if (BootRomEnabled)
-        return loadROM("D:\\Git\\GameBoy-Emulator\\roms\\boot\\dmg_boot.bin");
+        return loadCartridge("..\\..\\roms\\boot\\dmg_boot.bin", true);
     else
     {
         memory[0xFF00] = 0xCF;
@@ -275,7 +278,7 @@ void Memory::setInput(uint8_t input)
 uint8_t Memory::readMemoryROMBank0(uint16_t Adress)
 {
     uint8_t nBank = 0;
-    if (CartridgeType == 0)
+    if (CartridgeType == 0 || (!memory[0xFF50] && BootRomEnabled))
         return memory[Adress];
     else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
     {
@@ -450,7 +453,7 @@ void Memory::setLY(uint8_t Value)
 }
 void Memory::setPPUMode(uint8_t Value)
 {
-    memory[0xFF41] = memory[0xFF41] | (Value & 0b00000011);
+    memory[0xFF41] = (memory[0xFF41] & 0b11111100)| (Value & 0b00000011);
 }
 uint8_t Memory::getPPUMode()
 {
@@ -464,19 +467,19 @@ uint8_t Memory::readMemoryIO(uint16_t Adress)
 
 void Memory::writeMemoryVRAM(uint16_t Adress, uint8_t Value)
 {
-    if (getPPUMode() != 3)
+    if (getPPUMode() != 3 || (memory[0xFF40] >> 7) == 0)
     {
         memory[Adress] = Value;
     }
     else
     {
-        return;
+        memory[Adress] = memory[Adress];
     }
 }
 
-uint8_t Memory::readMemoryVRAM(uint16_t Adress)
+uint8_t Memory::readMemoryVRAM(uint16_t Adress, bool IsPPU)
 {
-    if (getPPUMode() != 3)
+    if (getPPUMode() != 3 || IsPPU || (memory[0xFF40] >> 7) == 0)
     {
         return memory[Adress];
     }
@@ -488,19 +491,19 @@ uint8_t Memory::readMemoryVRAM(uint16_t Adress)
 
 void Memory::writeMemoryOAM(uint16_t Adress, uint8_t Value)
 {
-    if (getPPUMode() <= 1)
+    if (getPPUMode() <= 1 || (memory[0xFF40] >> 7) == 0)
     {
         memory[Adress] = Value;
     }
     else
     {
-        return;
+        memory[Adress] = memory[Adress];
     }
 }
 
 uint8_t Memory::readMemoryOAM(uint16_t Adress)
 {
-    if (getPPUMode() <= 1)
+    if (getPPUMode() <= 1 || (memory[0xFF40] >> 7) == 0)
     {
         return memory[Adress];
     }

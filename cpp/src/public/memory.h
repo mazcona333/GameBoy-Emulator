@@ -13,7 +13,7 @@ public:
 
     bool loadROM(char const *filename);
 
-    uint8_t readMemory(uint16_t Adress);
+    uint8_t readMemory(uint16_t Adress, bool IsPPU = false);
     void writeMemory(uint16_t Adress, uint8_t Value);
 
     void IncDivRegister();
@@ -28,7 +28,7 @@ private:
     uint8_t memory[0xFFFF+1] = {0};
 
     bool BootRomEnabled = 0;
-    bool loadCartridge(char const *filename);
+    bool loadCartridge(char const *filename, bool boot = false);
     bool loadBoot();
 
     uint8_t CartridgeType;
@@ -47,7 +47,7 @@ private:
     uint8_t readMemoryIO(uint16_t Adress);
 
     void writeMemoryVRAM(uint16_t Adress, uint8_t Value);
-    uint8_t readMemoryVRAM(uint16_t Adress);
+    uint8_t readMemoryVRAM(uint16_t Adress, bool IsPPU = false);
     void writeMemoryOAM(uint16_t Adress, uint8_t Value);
     uint8_t readMemoryOAM(uint16_t Adress);
 

@@ -2,16 +2,33 @@
 
 // #define SDL_MAIN_HANDLED
 
-Ppu::Ppu(Memory *mem)
+Ppu::Ppu(Memory *mem, std::function<void(uint8_t *RawPixels, uint8_t row)> UpdateDisplayFunction)
 {
     memory = mem;
     BackgroundPixelFetcher = new PixelFetcher(memory, true);
+    UpdateDisplay = UpdateDisplayFunction;
 }
 
 void Ppu::Tick()
 {
-    /*
-    if (StallCounter > 0)
+    if ((memory->readMemory(0xFF40) >> 7) == 0)
+    {
+        Disabled = true;
+        return;
+    }
+    else
+    {
+        if (Disabled)
+        {
+            WaitFrame = true;
+            Disabled = false;
+        }
+    }
+
+    if (!WaitFrame)
+    {
+    }
+    else if (StallCounter > 0)
     {
         StallCounter--;
     }
@@ -29,11 +46,15 @@ void Ppu::Tick()
 
         if (DotCounter == 80)
         {
+            uint8_t SCX = memory->readMemory(0xFF43);
+            StallCounter = SCX;
             BackgroundPixelFIFO.empty();
             // TODO Clear ObjectFIFO
         }
         FetchBackgroundPixel();
         renderPixel(hPixelDrawing, getLY());
+        if (hPixelDrawing == 160)
+            UpdateDisplay(Display, getLY());
     }
     else
     {
@@ -41,58 +62,9 @@ void Ppu::Tick()
     }
     DotCounter = (DotCounter + 1) % 456;
     if (DotCounter == 0)
-        setLY((getLY() + 1) % 154);
-        */
-
-    //	reset SCY, SCX for correct scrolling values
-    uint8_t SCY = memory->readMemory(0xff42);
-    uint8_t SCX = memory->readMemory(0xff43);
-
-    uint8_t tilemap = (((memory->readMemory(0xff40) >> 3) & 1) == 1) ? 0x9c00 : 0x9800;  //	check which location was set in LCDC for BG Map
-    uint8_t tiledata = (((memory->readMemory(0xff40) >> 4) & 1) == 1) ? 0x8000 : 0x8800; //	check which location was set in LCDC for BG / Window Tile Data (Catalog)
-    unsigned char p = memory->readMemory(0xff47);
-    for (int j = 0; j < 256; j++)
     {
-
-        //	handle wrapping
-        uint8_t offY = getLY() + SCY;
-        uint8_t offX = j + SCX;
-
-        //	which tile no. is wanted from tiledata
-        uint8_t tilenr = memory->readMemory(tilemap + ((offY / 8 * 32) + (offX / 8)));
-        //	get color value for the current pixel (00, 01, 10, 11)
-        //	if 0x8800 we adress as signed tilenr from 0x9000 being tile 0 (overwrite the original value)
-        uint8_t colorval;
-        if (tiledata == 0x8800)
-        {
-            colorval = (memory->readMemory(tiledata + 0x800 + ((int8_t)tilenr * 0x10) + (offY % 8 * 2)) >> (7 - (offX % 8)) & 0x1) + ((memory->readMemory(tiledata + 0x800 + ((int8_t)tilenr * 0x10) + (offY % 8 * 2) + 1) >> (7 - (offX % 8)) & 0x1) * 2);
-        }
-        else
-        {
-            colorval = (memory->readMemory(tiledata + (tilenr * 0x10) + (offY % 8 * 2)) >> (7 - (offX % 8)) & 0x1) + (memory->readMemory(tiledata + (tilenr * 0x10) + (offY % 8 * 2) + 1) >> (7 - (offX % 8)) & 0x1) * 2;
-        }
-
-        unsigned char bgmap[160 * 144 * 3];
-
-        //	get real color from palette
-        bgmap[(getLY() * 256 * 3) + (j * 3)] = 0xFF * colorval / 3;
-        bgmap[(getLY() * 256 * 3) + (j * 3) + 1] = 0xFF * colorval / 3;
-        bgmap[(getLY() * 256 * 3) + (j * 3) + 2] = 0xFF * colorval / 3;
-
-        //	print by line, so image effects are possible
-        for (int r = 0; r < 144; r++)
-        {
-            for (int col = 0; col < 160; col++)
-            {
-                uint8_t yoffA = (r * 256 * 3);
-                uint8_t xoffA = (col * 3);
-                Display[(r * 160 * 3) + (col * 3)] = bgmap[yoffA + xoffA];
-                Display[(r * 160 * 3) + (col * 3) + 1] = bgmap[yoffA + xoffA + 1];
-                Display[(r * 160 * 3) + (col * 3) + 2] = bgmap[yoffA + xoffA + 2];
-                // Display[getLY() * RES_W + j] = 0xFFFFFFFF & (0b11111111111111111111111111111100 + colorval);
-            }
-        }
-        // Display[getLY() * RES_W + j] = 0xFFFFFFFF & (0b11111111111111111111111111111100 + colorval);
+        setLY((getLY() + 1) % 154);
+        hPixelDrawing = 0;
     }
 }
 
@@ -125,9 +97,16 @@ void Ppu::renderPixel(uint8_t LX, uint8_t LY)
 {
     if (BackgroundPixelFIFO.size() == 0)
         return;
-    Display[LY * RES_W + LX] = 0xFFFFFFFF & (0b11111111111111111111111111111100 + BackgroundPixelFIFO.front().GetColor());
+
+    uint8_t ColorID = BackgroundPixelFIFO.front().GetColor();
+    uint8_t Color = (memory->readMemory(0xFF47) & (3 << (2 * ColorID))) >> (2 * ColorID);
+
+    Display[(LY * RES_W + LX) * 4 + 0] = 0xFF;
+    Display[(LY * RES_W + LX) * 4 + 1] = 0xFF * (3 - Color) / 3;
+    Display[(LY * RES_W + LX) * 4 + 2] = 0xFF * (3 - Color) / 3;
+    Display[(LY * RES_W + LX) * 4 + 3] = 0xFF * (3 - Color) / 3;
     BackgroundPixelFIFO.pop();
-    hPixelDrawing = (hPixelDrawing + 1) % 160;
+    hPixelDrawing++;
 }
 
 uint8_t *Ppu::getDisplay()
@@ -194,34 +173,38 @@ void PixelFetcher::FetchTileNo()
     {
         TileMapBaseAdress = 0x9800;
     }
-    uint8_t offY = memory->readMemory(0xFF44) + memory->readMemory(0xFF42);
-    uint8_t offX = FetchCounterX + memory->readMemory(0xFF43);
-    // uint8_t TileMapOffset = (FetchCounterX + (memory->readMemory(0xFF43) / 8)) & 0x1F;
-    uint8_t TileMapOffset = offX / 8;
-    // TileMapOffset += 32 * (((memory->readMemory(0xFF44) + memory->readMemory(0xFF42)) & 0xFF) / 8);
-    TileMapOffset += 32 * (offY / 8);
-    // TileMapOffset = TileMapOffset & 0x3FF;
+    uint8_t SCX = memory->readMemory(0xFF43);
+    uint16_t TileMapOffset = (FetchCounterX + (SCX / 8)) & 0x1F;
 
-    TileMapNo = TileMapBaseAdress + TileMapOffset;
+    uint8_t LY = memory->readMemory(0xFF44);
+    uint8_t SCY = memory->readMemory(0xFF42);
+    TileMapOffset += (((LY + SCY) & 0xFF) / 8) * 32;
+    TileMapOffset = TileMapOffset & 0x3FF;
+
+    TileMapNo = memory->readMemory(TileMapBaseAdress + TileMapOffset, true);
 }
 
 void PixelFetcher::FetchTileDataLow()
 {
     uint16_t TileDataBaseAdress;
 
-    uint8_t offY = memory->readMemory(0xFF44) + memory->readMemory(0xFF42);
-    uint8_t offX = FetchCounterX + memory->readMemory(0xFF43);
-
     if (memory->readMemory(0xFF40) & 0b00010000)
     {
         TileDataBaseAdress = 0x8000;
-        // TileDataLow = memory->readMemory(TileDataBaseAdress + TileMapNo + (2 * ((memory->readMemory(0xFF44) + memory->readMemory(0xFF42)) % 8)));
-        TileDataLow = memory->readMemory(TileDataBaseAdress + (TileMapNo * 0x10) + (2 * (offY % 8)));
+        uint16_t TileAdress = TileDataBaseAdress + (TileMapNo * 0x10);
+        uint8_t LY = memory->readMemory(0xFF44);
+        uint8_t SCY = memory->readMemory(0xFF42);
+        uint16_t TileAdressOffset = 2 * ((LY + SCY) % 8);
+        TileDataLow = memory->readMemory(TileAdress + TileAdressOffset, true);
     }
     else
     {
         TileDataBaseAdress = 0x9000;
-        TileDataLow = memory->readMemory(TileDataBaseAdress + (int8_t)TileMapNo + (2 * ((memory->readMemory(0xFF44) + memory->readMemory(0xFF42)) % 8)));
+        uint16_t TileAdress = TileDataBaseAdress + ((int8_t)TileMapNo * 0x10);
+        uint8_t LY = memory->readMemory(0xFF44);
+        uint8_t SCY = memory->readMemory(0xFF42);
+        uint16_t TileAdressOffset = 2 * ((LY + SCY) % 8);
+        TileDataLow = memory->readMemory(TileAdress + TileAdressOffset, true);
     }
 }
 
@@ -229,19 +212,23 @@ void PixelFetcher::FetchTileDataHigh()
 {
     uint16_t TileDataBaseAdress;
 
-    uint8_t offY = memory->readMemory(0xFF44) + memory->readMemory(0xFF42);
-    uint8_t offX = FetchCounterX + memory->readMemory(0xFF43);
-
     if (memory->readMemory(0xFF40) & 0b00010000)
     {
         TileDataBaseAdress = 0x8000;
-        // TileDataLow = memory->readMemory(TileDataBaseAdress + TileMapNo + (2 * ((memory->readMemory(0xFF44) + memory->readMemory(0xFF42)) % 8)));
-        TileDataLow = memory->readMemory(TileDataBaseAdress + (TileMapNo * 0x10) + (2 * (offY % 8)) + 1);
+        uint16_t TileAdress = TileDataBaseAdress + (TileMapNo * 0x10);
+        uint8_t LY = memory->readMemory(0xFF44);
+        uint8_t SCY = memory->readMemory(0xFF42);
+        uint16_t TileAdressOffset = 2 * ((LY + SCY) % 8);
+        TileDataLow = memory->readMemory(TileAdress + TileAdressOffset + 1, true);
     }
     else
     {
         TileDataBaseAdress = 0x9000;
-        TileDataLow = memory->readMemory(TileDataBaseAdress + (int8_t)TileMapNo + (2 * ((memory->readMemory(0xFF44) + memory->readMemory(0xFF42)) % 8)) + 1);
+        uint16_t TileAdress = TileDataBaseAdress + ((int8_t)TileMapNo * 0x10);
+        uint8_t LY = memory->readMemory(0xFF44);
+        uint8_t SCY = memory->readMemory(0xFF42);
+        uint16_t TileAdressOffset = 2 * ((LY + SCY) % 8);
+        TileDataLow = memory->readMemory(TileAdress + TileAdressOffset + 1, true);
     }
 }
 
