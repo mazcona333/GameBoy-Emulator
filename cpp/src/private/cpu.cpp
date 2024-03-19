@@ -1,8 +1,7 @@
 #include "../public/cpu.h"
 
-Cpu::Cpu(Memory *mem)
+Cpu::Cpu(Memory *memory) : memory(memory)
 {
-    memory = mem;
 }
 
 uint8_t Cpu::readMemory(uint16_t Adress)
@@ -46,7 +45,7 @@ void Cpu::Tick()
             PendingInstructions.pop();
         }
         HandleInterrupt();
-        if (PendingInstructions.size() == 0)
+        if (PendingInstructions.empty())
         {
             FetchNextOP();
         }
@@ -66,7 +65,7 @@ void Cpu::Tick()
             PendingInstructions.pop();
         }
         HandleInterrupt();
-        if (PendingInstructions.size() == 0)
+        if (PendingInstructions.empty())
         {
             FetchNextOP();
         }

@@ -1,13 +1,13 @@
 #include "../public/gb.h"
 
-Gb::Gb(std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplayFunction, bool Debug)
+Gb::Gb(std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplay, bool Debug)
 {
     memory = new Memory(Debug);
     if (Debug)
         cpu = new CpuDebug(memory);
     else
         cpu = new Cpu(memory);
-    ppu = new Ppu(memory, UpdateDisplayFunction);
+    ppu = new Ppu(memory, UpdateDisplay);
 }
 
 bool Gb::loadROM(char const *filename)
