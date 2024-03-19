@@ -31,31 +31,39 @@ struct Pixel
 class PixelFetcher
 {
 public:
-    PixelFetcher(Memory *mem, bool Background = false);
-    void FetchTileNo();
-    void FetchTileDataLow();
-    void FetchTileDataHigh();
-    void Push(std::queue<Pixel> *PixelFIFO);
+    PixelFetcher(Memory *mem, std::queue<Pixel>* FIFO, bool Background = false);
+    std::queue<Pixel> *PixelFIFO;
+    void Step();
+    void Reset() { FetchCounterX = 0; FetchPhase = 0; };
 
 private:
     Memory *memory;
     bool IsBackground = false;
+    uint8_t SCX;
+    uint8_t SCY;
+    uint8_t LY;
+    uint8_t FetchPhase = 0;
     uint8_t FetchCounterX = 0;
     uint8_t TileMapNo = 0;
     uint8_t TileDataLow = 0;
     uint8_t TileDataHigh = 0;
+    
+    void FetchTileNo();
+    void FetchTileDataLow();
+    void FetchTileDataHigh();
+    void Push();
 };
 
 class Ppu
 {
 public:
-    Ppu(Memory *mem, std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplayFunction);
+    Ppu(Memory *mem, std::function<void(uint8_t *RawPixels, uint8_t row)> UpdateDisplayFunction);
     void Tick();
     uint8_t *getDisplay();
 
 private:
     Memory *memory;
-    std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplay;
+    std::function<void(uint8_t *RawPixels, uint8_t row)> UpdateDisplay;
 
     uint8_t Display[RES_W * RES_H * 4] = {0};
     uint8_t hPixelDrawing = 0;
@@ -75,7 +83,6 @@ private:
 
     PixelFetcher *BackgroundPixelFetcher;
     std::queue<Pixel> BackgroundPixelFIFO;
-    void FetchBackgroundPixel();
     // std::queue<std::function<void()>> ObjectPixelFIFO;
     void renderPixel(uint8_t LX, uint8_t LY);
 };

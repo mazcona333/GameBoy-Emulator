@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
     //gb->loadROM("..\\..\\roms\\blargg\\interrupt_time\\interrupt_time.gb");       // Nothing
     //gb->loadROM("..\\..\\roms\\blargg\\mem_timing\\mem_timing.gb");               // 01:ok  02:01  03:01   Failed 2 tests.
     //gb->loadROM("..\\..\\roms\\blargg\\mem_timing-2\\mem_timing.gb");             // Attempted to write not usable memory
-    //gb->loadROM("..\\..\\roms\\mealybug-tearoom-tests\\m2_win_en_toggle.gb");
+    //gb->loadROM("..\\..\\roms\\mealybug-tearoom-tests\\m3_bgp_change.gb");
 
     float Mhz = 4.194304f;
     //float cycleDelayMillisec = (1 / (Mhz * 1000000)) * 1000;

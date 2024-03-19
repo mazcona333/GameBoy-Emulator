@@ -48,7 +48,7 @@ uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
     {
         return readMemoryOAM(Adress);
     }
-    else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE
+    else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE TODO
     {
         //return 0x00;
         return memory[Adress];
@@ -112,9 +112,9 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     {
         writeMemoryOAM(Adress, Value);
     }
-    else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE
+    else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE TODO
     {
-        //std::cout << "Attempted to write not usable memory\n";
+        std::cout << "Attempted to write not usable memory\n";
         //throw std::out_of_range("Attempted to write not usable memory");
         memory[Adress] = Value;
     }
@@ -453,7 +453,7 @@ void Memory::setLY(uint8_t Value)
 }
 void Memory::setPPUMode(uint8_t Value)
 {
-    memory[0xFF41] = (memory[0xFF41] & 0b11111100)| (Value & 0b00000011);
+    memory[0xFF41] = (memory[0xFF41] & 0b11111100) + (Value & 0b00000011);
 }
 uint8_t Memory::getPPUMode()
 {
