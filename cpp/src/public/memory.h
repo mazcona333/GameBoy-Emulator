@@ -9,7 +9,7 @@ typedef uint8_t RAMbank[0x1FFF + 1];
 class Memory
 {
 public:
-    Memory(bool Debug = false);
+    Memory(bool DebugMode = false);
 
     bool loadROM(char const *filename);
 
@@ -49,7 +49,7 @@ private:
     void writeMemoryVRAM(uint16_t Adress, uint8_t Value);
     uint8_t readMemoryVRAM(uint16_t Adress, bool IsPPU = false);
     void writeMemoryOAM(uint16_t Adress, uint8_t Value);
-    uint8_t readMemoryOAM(uint16_t Adress);
+    uint8_t readMemoryOAM(uint16_t Adress, bool IsPPU = false);
 
     bool DebugMode = false;
 };

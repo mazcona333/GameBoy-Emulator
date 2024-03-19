@@ -4,9 +4,8 @@
 #include <iostream>
 #include <fstream>
 
-Memory::Memory(bool Debug)
+Memory::Memory(bool DebugMode) : DebugMode(DebugMode)
 {
-    DebugMode = Debug;
 }
 
 uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
@@ -46,7 +45,7 @@ uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
     }
     else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // TODO OAM
     {
-        return readMemoryOAM(Adress);
+        return readMemoryOAM(Adress, IsPPU);
     }
     else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE TODO
     {
@@ -501,9 +500,9 @@ void Memory::writeMemoryOAM(uint16_t Adress, uint8_t Value)
     }
 }
 
-uint8_t Memory::readMemoryOAM(uint16_t Adress)
+uint8_t Memory::readMemoryOAM(uint16_t Adress, bool IsPPU)
 {
-    if (getPPUMode() <= 1 || (memory[0xFF40] >> 7) == 0)
+    if (getPPUMode() <= 1 || IsPPU  || (memory[0xFF40] >> 7) == 0)
     {
         return memory[Adress];
     }

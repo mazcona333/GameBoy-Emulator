@@ -28,7 +28,7 @@
 class Cpu
 {
 public:
-    Cpu(Memory* mem);
+    Cpu(Memory* memory);
     void Tick();
     void RunNextOP();
     bool loadROM(char const *filename);

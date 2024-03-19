@@ -2,11 +2,10 @@
 
 // #define SDL_MAIN_HANDLED
 
-Ppu::Ppu(Memory *mem, std::function<void(uint8_t *RawPixels, uint8_t row)> UpdateDisplayFunction)
+Ppu::Ppu(Memory *memory, std::function<void(uint8_t *RawPixels, uint8_t row)> UpdateDisplay) : memory(memory), UpdateDisplay(UpdateDisplay)
 {
-    memory = mem;
-    BackgroundPixelFetcher = new PixelFetcher(memory, &BackgroundPixelFIFO, true);
-    UpdateDisplay = UpdateDisplayFunction;
+    BackgroundPixelFetcher = new PixelFetcher(memory, &BackgroundPixelFIFO, PixelFetcher::FetchingMode::BACKGROUND);
+    ObjectPixelFetcher = new PixelFetcher(memory, &ObjectPixelFIFO, PixelFetcher::FetchingMode::SPRITE);
 }
 
 void Ppu::Tick()
@@ -31,41 +30,80 @@ void Ppu::Tick()
     }
     else if (getLY() >= 144)
     {
-        if(getPPUMode() != PpuMode::VBLANK)
+        if (getPPUMode() != PpuMode::VBLANK)
             setPPUMode(PpuMode::VBLANK);
     }
     else if (DotCounter < 80)
     {
-        if(getPPUMode() != PpuMode::OAMSCAN)
+        if (DotCounter == 0)
+        {
             setPPUMode(PpuMode::OAMSCAN);
+            OAMBuffer.clear();
+        }
+        OAMScanStep();
     }
     else if (hPixelDrawing <= 159)
     {
-        if(getPPUMode() != PpuMode::DRAW)
-            setPPUMode(PpuMode::DRAW);
-
         if (DotCounter == 80)
         {
-            uint8_t SCX = memory->readMemory(0xFF43);
-            StallCounter += SCX + 4;
-            BackgroundPixelFIFO.empty();
-            // TODO Clear ObjectFIFO
+            setPPUMode(PpuMode::DRAW);
+
+            StallCounter += 4;
+
+            BackgroundPixelFIFO = {};
+            ObjectPixelFIFO = {};
         }
-        BackgroundPixelFetcher->Step();
-        renderPixel(hPixelDrawing, getLY());
+
+        if (!SpriteFetch)
+            BackgroundPixelFetcher->Step();
+
+        if (memory->readMemory(0xFF40) & 0b0000010)
+        {
+            bool ObjectInLine = false;
+            for (size_t i = 0; i < OAMBuffer.size(); i++)
+            {
+                if (OAMBuffer[i].XPostion <= hPixelDrawing + 8)
+                {
+                    ObjectInLine = true;
+                    break;
+                }
+            }
+            if (ObjectInLine)
+            {
+                SpriteFetch = true;
+                BackgroundPixelFetcher->ResetPhase();
+            }
+            else
+            {
+                // TODO Cancel Object Fetch
+            }
+        }
+
+        if (SpriteFetch)
+        {
+            if (ObjectPixelFetcher->GetStep() < 3 && BackgroundPixelFIFO.empty())
+                ObjectPixelFetcher->Step();
+            else
+                SpriteFetch = false;
+            // TODO Cancel Object Fetch
+        }
+
+        if (!SpriteFetch)
+            renderPixel(hPixelDrawing, getLY());
 
         if (hPixelDrawing == 160)
         {
             UpdateDisplay(Display, getLY());
-            BackgroundPixelFetcher->Reset();
+            BackgroundPixelFetcher->ResetCounter();
+            BackgroundPixelFetcher->ResetPhase();
         }
     }
     else
     {
-        if(getPPUMode() != PpuMode::HBLANK)
+        if (getPPUMode() != PpuMode::HBLANK)
             setPPUMode(PpuMode::HBLANK);
     }
-    
+
     DotCounter = (DotCounter + 1) % 456;
     if (DotCounter == 0)
     {
@@ -79,10 +117,15 @@ void Ppu::Tick()
 
 void Ppu::renderPixel(uint8_t LX, uint8_t LY)
 {
-    if (BackgroundPixelFIFO.size() == 0)
+    uint8_t SCX = memory->readMemory(0xFF43);
+    if (BackgroundPixelFIFO.empty())
         return;
+    if (LX < SCX)
+    {
+        BackgroundPixelFIFO.pop();
+    }
 
-    uint8_t ColorID = BackgroundPixelFIFO.front().GetColor();
+    uint8_t ColorID = BackgroundPixelFIFO.front().Color;
     uint8_t Color = (memory->readMemory(0xFF47) & (3 << (2 * ColorID))) >> (2 * ColorID);
 
     if (!Disabled && !WaitFrame)
@@ -150,20 +193,28 @@ uint8_t Ppu::getLCDC()
     return memory->readMemory(0xFF40);
 }
 
-PixelFetcher::PixelFetcher(Memory *mem, std::queue<Pixel>* FIFO, bool Background)
+void Ppu::OAMScanStep()
 {
-    memory = mem;
-    IsBackground = Background;
-    PixelFIFO = FIFO;
+    if (DotCounter & 1)
+    {
+        uint8_t ObjectOffset = ((DotCounter - 1) / 2) * 4;
+
+        uint8_t YPosition = memory->readMemory(0xFE00 + ObjectOffset, true);
+        uint8_t XPosition = memory->readMemory(0xFE00 + ObjectOffset + 1, true);
+        uint8_t TileIndex = memory->readMemory(0xFE00 + ObjectOffset + 2, true);
+        uint8_t Attributes = memory->readMemory(0xFE00 + ObjectOffset + 3, true);
+
+        bool ObjectSize = memory->readMemory(0xFF40) & 0b00000100;
+
+        if ((XPosition > 0) && ((getLY() + 16) >= YPosition) && ((getLY() + 16) < (YPosition + (ObjectSize ? 16 : 8))) && OAMBuffer.size() < 10)
+            OAMBuffer.push_back(OAMData(YPosition, XPosition, TileIndex, Attributes));
+    }
 }
 
 void PixelFetcher::Step()
 {
-    if (FetchPhase == 0 || FetchPhase == 2 || FetchPhase == 4 || FetchPhase == 6)
-    {
-        // StallCounter++;
-    }
-    else if (FetchPhase == 1)
+
+    if (FetchPhase == 1)
     { // TODO Fetch Tile Number
         FetchTileNo();
     }
@@ -175,9 +226,13 @@ void PixelFetcher::Step()
     { // TODO Fetch Tile Data High
         FetchTileDataHigh();
     }
-    else if (FetchPhase == 7)
+    else if (FetchPhase == 7 || (FetchPhase == 6 && Mode == FetchingMode::SPRITE))
     { // TODO Push to FIFO Wait???
         Push();
+    }
+    else
+    {
+        // StallCounter++;
     }
 
     FetchPhase = (FetchPhase + 1) % 8;
@@ -186,34 +241,43 @@ void PixelFetcher::Step()
 void PixelFetcher::FetchTileNo()
 {
     uint16_t TileMapBaseAdress;
-    if (memory->readMemory(0xFF40) & 0b00001000)
+    if (Mode == FetchingMode::BACKGROUND)
     {
-        TileMapBaseAdress = 0x9C00;
+        if (memory->readMemory(0xFF40) & 0b00001000)
+        {
+            TileMapBaseAdress = 0x9C00;
+        }
+        else
+        {
+            TileMapBaseAdress = 0x9800;
+        }
+
+        if (FetchCounterX == 0)
+            SCX = memory->readMemory(0xFF43);
+        else
+            SCX = (memory->readMemory(0xFF43) & 0x11111000) + (SCX & 0x00000111);
+
+        uint16_t TileMapOffset = (FetchCounterX + (SCX / 8)) & 0x1F;
+
+        LY = memory->readMemory(0xFF44);
+        SCY = memory->readMemory(0xFF42);
+        TileMapOffset += (((LY + SCY) & 0xFF) / 8) * 32;
+        TileMapOffset = TileMapOffset & 0x3FF;
+
+        TileMapNo = memory->readMemory(TileMapBaseAdress + TileMapOffset, true);
     }
-    else
+    else if (Mode == FetchingMode::SPRITE)
     {
-        TileMapBaseAdress = 0x9800;
+        TileMapNo = OAMBuffer->front().TileIndex;
+        // TODO Not front but the one overlapping
     }
-    if(FetchCounterX == 0)
-        SCX = memory->readMemory(0xFF43);
-    else
-        SCX = (memory->readMemory(0xFF43) & 0x11111000) + (SCX & 0x00000111);
-
-    uint16_t TileMapOffset = (FetchCounterX + (SCX / 8)) & 0x1F;
-
-    LY = memory->readMemory(0xFF44);
-    SCY = memory->readMemory(0xFF42);
-    TileMapOffset += (((LY + SCY) & 0xFF) / 8) * 32;
-    TileMapOffset = TileMapOffset & 0x3FF;
-
-    TileMapNo = memory->readMemory(TileMapBaseAdress + TileMapOffset, true);
 }
 
 void PixelFetcher::FetchTileDataLow()
 {
     uint16_t TileDataBaseAdress;
 
-    if (memory->readMemory(0xFF40) & 0b00010000)
+    if ((memory->readMemory(0xFF40) & 0b00010000) || Mode == FetchingMode::SPRITE)
     {
         TileDataBaseAdress = 0x8000;
         uint16_t TileAdress = TileDataBaseAdress + (TileMapNo * 0x10);
@@ -233,7 +297,7 @@ void PixelFetcher::FetchTileDataHigh()
 {
     uint16_t TileDataBaseAdress;
 
-    if (memory->readMemory(0xFF40) & 0b00010000)
+    if (memory->readMemory(0xFF40) & 0b00010000 || Mode == FetchingMode::SPRITE)
     {
         TileDataBaseAdress = 0x8000;
         uint16_t TileAdress = TileDataBaseAdress + (TileMapNo * 0x10);
@@ -251,12 +315,26 @@ void PixelFetcher::FetchTileDataHigh()
 
 void PixelFetcher::Push()
 {
-    if (PixelFIFO->size() == 0)
+    if (Mode == FetchingMode::BACKGROUND)
+    {
+        if (PixelFIFO->size() == 0)
+        {
+            for (size_t i = 0; i < 8; i++)
+            {
+                uint8_t Color = ((TileDataHigh & (1 << (7 - i))) >> (6 - i)) + ((TileDataLow & (1 << (7 - i))) >> (7 - i));
+                PixelFIFO->push(Pixel(Color));
+            }
+            FetchCounterX++;
+        }
+    }
+    else if (Mode == FetchingMode::SPRITE)
     {
         for (size_t i = 0; i < 8; i++)
         {
-            PixelFIFO->push(Pixel((TileDataHigh & (1 << (7 - i))) >> (7 - i), (TileDataLow & (1 << (7 - i))) >> (7 - i)));
+            if(i < PixelFIFO->size() || i < (8 - OAMBuffer->front().XPostion))
+                continue;
+            uint8_t Color = ((TileDataHigh & (1 << (7 - i))) >> (6 - i)) + ((TileDataLow & (1 << (7 - i))) >> (7 - i));
+            PixelFIFO->push(Pixel(Color));
         }
-        FetchCounterX++;
     }
 }
