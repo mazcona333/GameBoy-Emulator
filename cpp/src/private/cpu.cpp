@@ -77,7 +77,7 @@ void Cpu::Tick()
             RunningMode = CpuMode::NORMAL;
         break;
 
-    default:
+    default: // Never happens
         break;
     }
     UpdateTimer();
@@ -186,7 +186,7 @@ void Cpu::UpdateTimer()
                 memory->writeMemory(REG_TIMA, memory->readMemory(REG_TIMA) + 1);
             }
             break;
-        default:
+        default: // Never happens
             break;
         }
         if (memory->readMemory(REG_TIMA) == 0) // TIMA overflow
@@ -301,11 +301,11 @@ void Cpu::FetchNextOP()
             case 7:
                 OP_CCF();
                 break;
-            default:
+            default: // Never happens
                 break;
             }
             break;
-        default:
+        default: // Never happens
             break;
         }
         break;
@@ -345,7 +345,7 @@ void Cpu::FetchNextOP()
             OP_CP(OpCodePart3);
             break;
 
-        default:
+        default: // Never happens
             break;
         }
         break;
@@ -380,7 +380,7 @@ void Cpu::FetchNextOP()
             case 7:
                 OP_LD_hlspimm8();
                 break;
-            default:
+            default: // Never happens
                 break;
             }
             break;
@@ -402,7 +402,7 @@ void Cpu::FetchNextOP()
                     case 5:
                         OP_JP_hl();
                         break;
-                    default:
+                    default: // Never happens
                         break;
                     }
                 }
@@ -439,7 +439,7 @@ void Cpu::FetchNextOP()
             case 7:
                 OP_LD_raimm16mem();
                 break;
-            default:
+            default: // Never happens
                 break;
             }
             break;
@@ -464,7 +464,7 @@ void Cpu::FetchNextOP()
                 case 7:
                     OP_EI();
                     break;
-                default:
+                default: // Never happens
                     break;
                 }
             }
@@ -553,16 +553,16 @@ void Cpu::FetchNextOP()
                 OP_RST(0x38);
                 break;
 
-            default:
+            default: // Never happens
                 break;
             }
             break;
 
-        default:
+        default: // Never happens
             break;
         }
         break;
-    default:
+    default: // Never happens
         break;
     }
 }
@@ -604,7 +604,7 @@ void Cpu::ExecutePrefixedOP()
         case 7:
             OP_SRL(OpCodePart3);
             break;
-        default:
+        default: // Never happens
             break;
         }
         break;
@@ -617,7 +617,7 @@ void Cpu::ExecutePrefixedOP()
     case 3:
         OP_SET(OpCodePart3, OpCodePart2);
         break;
-    default:
+    default: // Never happens
         break;
     }
 }
@@ -1773,7 +1773,7 @@ void Cpu::OP_EI()
 
 uint8_t Cpu::getRegister8(uint8_t Register)
 {
-    switch (Register)
+    switch (Register & 0b00000111)
     {
     case 0:
         return registers.b;
@@ -1797,7 +1797,7 @@ uint8_t Cpu::getRegister8(uint8_t Register)
 }
 uint16_t Cpu::getRegister16(uint8_t Register)
 {
-    switch (Register)
+    switch (Register & 0b00000111)
     {
     case 0:
         return combineuint8(registers.c, registers.b);
@@ -1821,7 +1821,7 @@ uint16_t Cpu::getRegister16(uint8_t Register)
 }
 void Cpu::setRegister8(uint8_t Register, uint8_t Value)
 {
-    switch (Register)
+    switch (Register & 0b00000111)
     {
     case 0:
         registers.b = Value;
@@ -1846,7 +1846,7 @@ void Cpu::setRegister8(uint8_t Register, uint8_t Value)
     case 7:
         registers.a = Value;
         break;
-    default:
+    default: // Never happens
         break;
     }
 }

@@ -177,7 +177,7 @@ uint8_t *Ppu::getDisplay()
 
 PpuMode Ppu::getPPUMode()
 {
-    switch (memory->readMemory(REG_STAT) & 0x00000011)
+    switch (memory->readMemory(REG_STAT) & 0b00000011)
     {
     case 0:
         return PpuMode::HBLANK;
@@ -192,7 +192,8 @@ PpuMode Ppu::getPPUMode()
         return PpuMode::DRAW;
         break;
 
-    default:
+    default: // Never happens
+        return PpuMode::HBLANK;
         break;
     };
 }
@@ -279,7 +280,7 @@ void PixelFetcher::FetchTileNo()
         if (FetchCounterX == 0)
             SCX = memory->readMemory(REG_SCX);
         else
-            SCX = (memory->readMemory(REG_SCX) & 0x11111000) + (SCX & 0x00000111);
+            SCX = (memory->readMemory(REG_SCX) & 0b11111000) + (SCX & 0b00000111);
 
         uint16_t TileMapOffset = (FetchCounterX + (SCX / 8)) & 0x1F;
 
