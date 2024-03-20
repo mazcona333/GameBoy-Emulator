@@ -10,7 +10,7 @@ Ppu::Ppu(Memory *memory, std::function<void(uint8_t *RawPixels, uint8_t row)> Up
 
 void Ppu::Tick()
 {
-    if ((memory->readMemory(0xFF40) >> 7) == 0)
+    if ((memory->readMemory(REG_LCDC) >> 7) == 0)
     {
         Disabled = true;
         return;
@@ -57,14 +57,16 @@ void Ppu::Tick()
         if (!SpriteFetch)
             BackgroundPixelFetcher->Step();
 
-        if (memory->readMemory(0xFF40) & 0b0000010)
+        if (memory->readMemory(REG_LCDC) & 0b0000010)
         {
             bool ObjectInLine = false;
-            for (size_t i = 0; i < OAMBuffer.size(); i++)
+            for (std::vector<OAMData>::iterator obj = OAMBuffer.begin(); obj != OAMBuffer.end();)
             {
-                if (OAMBuffer[i].XPostion <= hPixelDrawing + 8)
+                if ((*obj).XPostion <= hPixelDrawing + 8)
                 {
                     ObjectInLine = true;
+                    ObjectPixelFetcher->SetSpriteData(&(*obj));
+                    OAMBuffer.erase(obj);
                     break;
                 }
             }
@@ -117,7 +119,7 @@ void Ppu::Tick()
 
 void Ppu::renderPixel(uint8_t LX, uint8_t LY)
 {
-    uint8_t SCX = memory->readMemory(0xFF43);
+    uint8_t SCX = memory->readMemory(REG_SCX);
     if (BackgroundPixelFIFO.empty())
         return;
     if (LX < SCX)
@@ -126,14 +128,37 @@ void Ppu::renderPixel(uint8_t LX, uint8_t LY)
     }
 
     uint8_t ColorID = BackgroundPixelFIFO.front().Color;
-    uint8_t Color = (memory->readMemory(0xFF47) & (3 << (2 * ColorID))) >> (2 * ColorID);
+    BackgroundPixelFIFO.pop();
+    uint8_t ColorBG = (memory->readMemory(REG_BGP) & (3 << (2 * ColorID))) >> (2 * ColorID);
+
+    uint8_t FinalColor = ColorBG;
+
+    if (!ObjectPixelFIFO.empty())
+    {
+        Pixel ObjPixel = ObjectPixelFIFO.front();
+        ObjectPixelFIFO.pop();
+        if (ObjPixel.Color != 0)
+        {
+            if (!ObjPixel.BackgroundPriority || ColorBG == 0)
+            {
+                if (ObjPixel.Palette)
+                {
+                    FinalColor = (memory->readMemory(REG_OBP1) & (3 << (2 * ObjPixel.Color))) >> (2 * ObjPixel.Color);
+                }
+                else
+                {
+                    FinalColor = (memory->readMemory(REG_OBP0) & (3 << (2 * ObjPixel.Color))) >> (2 * ObjPixel.Color);
+                }
+            }
+        }
+    }
 
     if (!Disabled && !WaitFrame)
     {
         Display[(LY * RES_W + LX) * 4 + 0] = 0xFF;
-        Display[(LY * RES_W + LX) * 4 + 1] = 0xF0 * (3 - Color) / 3;
-        Display[(LY * RES_W + LX) * 4 + 2] = 0xF0 * (3 - Color) / 3;
-        Display[(LY * RES_W + LX) * 4 + 3] = 0xF0 * (3 - Color) / 3;
+        Display[(LY * RES_W + LX) * 4 + 1] = 0xF0 * (3 - FinalColor) / 3;
+        Display[(LY * RES_W + LX) * 4 + 2] = 0xF0 * (3 - FinalColor) / 3;
+        Display[(LY * RES_W + LX) * 4 + 3] = 0xF0 * (3 - FinalColor) / 3;
     }
     else
     {
@@ -142,7 +167,6 @@ void Ppu::renderPixel(uint8_t LX, uint8_t LY)
         Display[(LY * RES_W + LX) * 4 + 2] = 0xFF;
         Display[(LY * RES_W + LX) * 4 + 3] = 0xFF;
     }
-    BackgroundPixelFIFO.pop();
     hPixelDrawing++;
 }
 
@@ -153,7 +177,7 @@ uint8_t *Ppu::getDisplay()
 
 PpuMode Ppu::getPPUMode()
 {
-    switch (memory->readMemory(0xFF41) & 0x00000011)
+    switch (memory->readMemory(REG_STAT) & 0x00000011)
     {
     case 0:
         return PpuMode::HBLANK;
@@ -180,7 +204,7 @@ void Ppu::setPPUMode(PpuMode Mode)
 
 uint8_t Ppu::getLY()
 {
-    return memory->readMemory(0xFF44);
+    return memory->readMemory(REG_LY);
 }
 
 void Ppu::setLY(uint8_t LY)
@@ -190,7 +214,7 @@ void Ppu::setLY(uint8_t LY)
 
 uint8_t Ppu::getLCDC()
 {
-    return memory->readMemory(0xFF40);
+    return memory->readMemory(REG_LCDC);
 }
 
 void Ppu::OAMScanStep()
@@ -199,12 +223,12 @@ void Ppu::OAMScanStep()
     {
         uint8_t ObjectOffset = ((DotCounter - 1) / 2) * 4;
 
-        uint8_t YPosition = memory->readMemory(0xFE00 + ObjectOffset, true);
-        uint8_t XPosition = memory->readMemory(0xFE00 + ObjectOffset + 1, true);
-        uint8_t TileIndex = memory->readMemory(0xFE00 + ObjectOffset + 2, true);
-        uint8_t Attributes = memory->readMemory(0xFE00 + ObjectOffset + 3, true);
+        uint8_t YPosition = memory->readMemory(MEM_OAM_START + ObjectOffset, true);
+        uint8_t XPosition = memory->readMemory(MEM_OAM_START + ObjectOffset + 1, true);
+        uint8_t TileIndex = memory->readMemory(MEM_OAM_START + ObjectOffset + 2, true);
+        uint8_t Attributes = memory->readMemory(MEM_OAM_START + ObjectOffset + 3, true);
 
-        bool ObjectSize = memory->readMemory(0xFF40) & 0b00000100;
+        bool ObjectSize = memory->readMemory(REG_LCDC) & 0b00000100;
 
         if ((XPosition > 0) && ((getLY() + 16) >= YPosition) && ((getLY() + 16) < (YPosition + (ObjectSize ? 16 : 8))) && OAMBuffer.size() < 10)
             OAMBuffer.push_back(OAMData(YPosition, XPosition, TileIndex, Attributes));
@@ -215,19 +239,19 @@ void PixelFetcher::Step()
 {
 
     if (FetchPhase == 1)
-    { // TODO Fetch Tile Number
+    {
         FetchTileNo();
     }
     else if (FetchPhase == 3)
-    { // TODO Fetch Tile Data Low
+    {
         FetchTileDataLow();
     }
     else if (FetchPhase == 5)
-    { // TODO Fetch Tile Data High
+    {
         FetchTileDataHigh();
     }
     else if (FetchPhase == 7 || (FetchPhase == 6 && Mode == FetchingMode::SPRITE))
-    { // TODO Push to FIFO Wait???
+    {
         Push();
     }
     else
@@ -243,7 +267,7 @@ void PixelFetcher::FetchTileNo()
     uint16_t TileMapBaseAdress;
     if (Mode == FetchingMode::BACKGROUND)
     {
-        if (memory->readMemory(0xFF40) & 0b00001000)
+        if (memory->readMemory(REG_LCDC) & 0b00001000)
         {
             TileMapBaseAdress = 0x9C00;
         }
@@ -253,14 +277,14 @@ void PixelFetcher::FetchTileNo()
         }
 
         if (FetchCounterX == 0)
-            SCX = memory->readMemory(0xFF43);
+            SCX = memory->readMemory(REG_SCX);
         else
-            SCX = (memory->readMemory(0xFF43) & 0x11111000) + (SCX & 0x00000111);
+            SCX = (memory->readMemory(REG_SCX) & 0x11111000) + (SCX & 0x00000111);
 
         uint16_t TileMapOffset = (FetchCounterX + (SCX / 8)) & 0x1F;
 
-        LY = memory->readMemory(0xFF44);
-        SCY = memory->readMemory(0xFF42);
+        LY = memory->readMemory(REG_LY);
+        SCY = memory->readMemory(REG_SCY);
         TileMapOffset += (((LY + SCY) & 0xFF) / 8) * 32;
         TileMapOffset = TileMapOffset & 0x3FF;
 
@@ -268,8 +292,7 @@ void PixelFetcher::FetchTileNo()
     }
     else if (Mode == FetchingMode::SPRITE)
     {
-        TileMapNo = OAMBuffer->front().TileIndex;
-        // TODO Not front but the one overlapping
+        TileMapNo = SpriteData->TileIndex;
     }
 }
 
@@ -277,7 +300,7 @@ void PixelFetcher::FetchTileDataLow()
 {
     uint16_t TileDataBaseAdress;
 
-    if ((memory->readMemory(0xFF40) & 0b00010000) || Mode == FetchingMode::SPRITE)
+    if ((memory->readMemory(REG_LCDC) & 0b00010000) || Mode == FetchingMode::SPRITE)
     {
         TileDataBaseAdress = 0x8000;
         uint16_t TileAdress = TileDataBaseAdress + (TileMapNo * 0x10);
@@ -297,7 +320,7 @@ void PixelFetcher::FetchTileDataHigh()
 {
     uint16_t TileDataBaseAdress;
 
-    if (memory->readMemory(0xFF40) & 0b00010000 || Mode == FetchingMode::SPRITE)
+    if (memory->readMemory(REG_LCDC) & 0b00010000 || Mode == FetchingMode::SPRITE)
     {
         TileDataBaseAdress = 0x8000;
         uint16_t TileAdress = TileDataBaseAdress + (TileMapNo * 0x10);
@@ -331,10 +354,12 @@ void PixelFetcher::Push()
     {
         for (size_t i = 0; i < 8; i++)
         {
-            if(i < PixelFIFO->size() || i < (8 - OAMBuffer->front().XPostion))
+            if (i < PixelFIFO->size() || i < (8 - SpriteData->XPostion))
                 continue;
             uint8_t Color = ((TileDataHigh & (1 << (7 - i))) >> (6 - i)) + ((TileDataLow & (1 << (7 - i))) >> (7 - i));
-            PixelFIFO->push(Pixel(Color));
+            uint8_t Palette = (SpriteData->Attributes & 0b00010000) >> 4;
+            uint8_t Priority = (SpriteData->Attributes & 0b10000000) >> 7;
+            PixelFIFO->push(Pixel(Color, Palette, Priority));
         }
     }
 }

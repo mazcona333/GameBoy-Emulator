@@ -46,7 +46,7 @@ public:
     };
 
 public:
-    PixelFetcher(Memory *memory, std::queue<Pixel> *PixelFIFO, FetchingMode Mode, std::vector<OAMData>* OAMBuffer = nullptr) : memory(memory), PixelFIFO(PixelFIFO), Mode(Mode), OAMBuffer(OAMBuffer){};
+    PixelFetcher(Memory *memory, std::queue<Pixel> *PixelFIFO, FetchingMode Mode) : memory(memory), PixelFIFO(PixelFIFO), Mode(Mode){};
     std::queue<Pixel> *PixelFIFO;
     void Step();
     void ResetCounter()
@@ -58,6 +58,7 @@ public:
         FetchPhase = 0;
     };
     uint8_t GetStep() { return (FetchPhase & 1 ? FetchPhase - 1 : FetchPhase) / 2; }
+    void SetSpriteData(OAMData *Sprite) { SpriteData = Sprite; }
 
 private:
     Memory *memory;
@@ -71,7 +72,7 @@ private:
     uint8_t TileDataLow = 0;
     uint8_t TileDataHigh = 0;
 
-    std::vector<OAMData>* OAMBuffer;
+    OAMData *SpriteData;
 
     void FetchTileNo();
     void FetchTileDataLow();

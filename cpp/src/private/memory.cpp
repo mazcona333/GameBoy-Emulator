@@ -21,9 +21,9 @@ uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
     }
     else if (Adress >= 0x4000 && Adress <= 0x7FFF) // ROM bank 01
     {
-        return readMemoryROMBankN(Adress - 0x4000);
+        return readMemoryROMBankN(Adress - ROMBANK_SIZE);
     }
-    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // TODO VRAM
+    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // WIP VRAM
     {
         return readMemoryVRAM(Adress, IsPPU);
     }
@@ -43,13 +43,13 @@ uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
     {
         return memory[Adress - 0x2000];
     }
-    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // TODO OAM
+    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // WIP OAM
     {
         return readMemoryOAM(Adress, IsPPU);
     }
     else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE TODO
     {
-        //return 0x00;
+        // return 0x00;
         return memory[Adress];
     }
     else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
@@ -60,7 +60,7 @@ uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
     {
         return memory[Adress];
     }
-    else if (Adress >= 0xFFFF && Adress <= 0xFFFF) // IE
+    else if (Adress == REG_IE) // IE
     {
         return memory[Adress];
     }
@@ -87,7 +87,7 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     {
         writeMBCRegister(Adress, Value);
     }
-    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // TODO VRAM
+    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // WIP VRAM
     {
         writeMemoryVRAM(Adress, Value);
     }
@@ -107,14 +107,14 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     {
         memory[Adress - 0x2000] = Value;
     }
-    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // TODO OAM
+    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // WIP OAM
     {
         writeMemoryOAM(Adress, Value);
     }
     else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE TODO
     {
         std::cout << "Attempted to write not usable memory\n";
-        //throw std::out_of_range("Attempted to write not usable memory");
+        // throw std::out_of_range("Attempted to write not usable memory");
         memory[Adress] = Value;
     }
     else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
@@ -125,7 +125,7 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     {
         memory[Adress] = Value;
     }
-    else if (Adress >= 0xFFFF && Adress <= 0xFFFF) // IE
+    else if (Adress == REG_IE) // IE
     {
         memory[Adress] = Value;
     }
@@ -159,7 +159,7 @@ bool Memory::loadCartridge(char const *filename, bool boot)
                 case 0:
                     nRamBanks = 0;
                     break;
-                case 1:
+                case 1: // Unused
                     nRamBanks = 0;
                     break;
                 case 2:
@@ -176,16 +176,16 @@ bool Memory::loadCartridge(char const *filename, bool boot)
                     break;
                 }
             }
-            if (DebugMode || CartridgeType == 0 || boot)
+            if (DebugMode || (CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09) || boot)
                 memory[i] = c;
             else
-                cartridgeROM[i / (0x3FFF + 1)][i % (0x3FFF + 1)] = c;
+                cartridgeROM[i / (ROMBANK_SIZE)][i % (ROMBANK_SIZE)] = c;
         }
 
-        if (CartridgeType == 0)
+        if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
         {
         }
-        else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
+        else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
         {
             writeMBCRegister(0x0000, 0);
             writeMBCRegister(0x2000, 0);
@@ -206,7 +206,7 @@ bool Memory::loadCartridge(char const *filename, bool boot)
 
 bool Memory::loadROM(char const *filename)
 {
-    bool romLoaded =  loadCartridge(filename);
+    bool romLoaded = loadCartridge(filename);
     bool bootLoaded = loadBoot();
     return romLoaded && bootLoaded;
 }
@@ -218,14 +218,14 @@ bool Memory::loadBoot()
         return loadCartridge("..\\..\\roms\\boot\\dmg_boot.bin", true);
     else
     {
-        memory[0xFF00] = 0xCF;
+        memory[REG_JOYP] = 0xCF;
         memory[0xFF01] = 0x00;
         memory[0xFF02] = 0x7E;
-        memory[0xFF04] = 0xAB;
-        memory[0xFF05] = 0x00;
-        memory[0xFF06] = 0x00;
-        memory[0xFF07] = 0xF8;
-        memory[0xFF0F] = 0xE1;
+        memory[REG_DIV] = 0xAB;
+        memory[REG_TIMA] = 0x00;
+        memory[REG_TMA] = 0x00;
+        memory[REG_TAC] = 0xF8;
+        memory[REG_IF] = 0xE1;
         memory[0xFF10] = 0x80;
         memory[0xFF11] = 0xBF;
         memory[0xFF12] = 0xF3;
@@ -247,14 +247,14 @@ bool Memory::loadBoot()
         memory[0xFF24] = 0x77;
         memory[0xFF25] = 0xF3;
         memory[0xFF26] = 0xF1;
-        memory[0xFF40] = 0x91;
-        memory[0xFF41] = 0x85;
-        memory[0xFF42] = 0x00;
-        memory[0xFF43] = 0x00;
-        memory[0xFF44] = 0x00;
-        memory[0xFF45] = 0x00;
-        memory[0xFF46] = 0xFF;
-        memory[0xFF47] = 0xFC;
+        memory[REG_LCDC] = 0x91;
+        memory[REG_STAT] = 0x85;
+        memory[REG_SCY] = 0x00;
+        memory[REG_SCX] = 0x00;
+        memory[REG_LY] = 0x00;
+        memory[REG_LYC] = 0x00;
+        memory[REG_DMA] = 0xFF;
+        memory[REG_BGP] = 0xFC;
         // memory[0xFF48] = 0xCF;
         // memory[0xFF49] = 0xCF;
         memory[0xFF4A] = 0x00;
@@ -265,21 +265,21 @@ bool Memory::loadBoot()
 
 void Memory::IncDivRegister()
 {
-    memory[0xFF04] = memory[0xFF04] + 1;
+    memory[REG_DIV] = memory[REG_DIV] + 1;
 }
 
 void Memory::setInput(uint8_t input)
 {
-    memory[0xFF00] = input;
+    memory[REG_JOYP] = input;
     // std::cout << (int)input << "\n";
 }
 
 uint8_t Memory::readMemoryROMBank0(uint16_t Adress)
 {
     uint8_t nBank = 0;
-    if (CartridgeType == 0 || (!memory[0xFF50] && BootRomEnabled))
+    if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09) || (!memory[REG_BANK] && BootRomEnabled))
         return memory[Adress];
-    else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
+    else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
     {
         if (nRomBanks < 64)
             return cartridgeROM[nBank][Adress];
@@ -299,9 +299,9 @@ uint8_t Memory::readMemoryROMBank0(uint16_t Adress)
 uint8_t Memory::readMemoryROMBankN(uint16_t Adress)
 {
     uint8_t nBank = 1;
-    if (CartridgeType == 0)
-        return memory[Adress + 0x4000];
-    else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
+    if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
+        return memory[Adress + ROMBANK_SIZE];
+    else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
     {
         if (nRomBanks < 64)
         {
@@ -330,9 +330,9 @@ uint8_t Memory::readMemoryRAMBank(uint16_t Adress)
     uint8_t nBank = 0;
     if (nRamBanks > 1 && (memory[0x0000] & 0xF) == 0xA)
     {
-        if (CartridgeType == 0)
+        if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
             return cartridgeRAM[nBank][Adress];
-        else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
+        else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
         {
             if (memory[0x6000]) // If Banking Mode == 1
             {
@@ -357,9 +357,9 @@ void Memory::writeMemoryRAMBank(uint16_t Adress, uint8_t Value)
     uint8_t nBank = 0;
     if (nRamBanks > 1 && (memory[0x0000] & 0xF) == 0xA)
     {
-        if (CartridgeType == 0)
+        if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
             cartridgeRAM[nBank][Adress] = Value;
-        else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
+        else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
         {
             if (memory[0x6000]) // If Banking Mode == 1
             {
@@ -378,9 +378,9 @@ void Memory::writeMemoryRAMBank(uint16_t Adress, uint8_t Value)
 
 void Memory::writeMBCRegister(uint16_t Adress, uint8_t Value)
 {
-    if (CartridgeType == 0)
+    if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
         memory[Adress] = Value;
-    else if (CartridgeType == 1 || CartridgeType == 2 || CartridgeType == 3)
+    else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
     {
         if (Adress >= 0x0000 && Adress <= 0x1FFF)
         { // RAM Enable
@@ -418,17 +418,21 @@ void Memory::writeMemoryIO(uint16_t Adress, uint8_t Value)
         std::cout << (char)readMemory(0xFF01); // SB
     }
 
-    if (Adress == 0xFF04) // DIV
+    // if(Adress == 0xFF03 || (Adress > readMemory(REG_TAC) && Adress < 0xFF10) || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4D && Adress < 0xFF50) || Adress > 0xFF50)
+    if (Adress == 0xFF03)
+        return;
+
+    if (Adress == REG_DIV) // DIV
     {
         Value = 0;
     }
 
-    {                         // LCD
-        if (Adress == 0xFF41) // STAT 7 ignored, 2,1,0 read only
+    {                           // LCD
+        if (Adress == REG_STAT) // STAT 7 ignored, 2,1,0 read only
         {
-            Value = (Value & 0b01111000) & memory[0xFF41];
+            Value = (Value & 0b01111000) & memory[REG_STAT];
         }
-        else if (Adress == 0xFF44) // LY READ ONLY
+        else if (Adress == REG_LY) // LY READ ONLY
         {
             return;
         }
@@ -439,34 +443,37 @@ void Memory::writeMemoryIO(uint16_t Adress, uint8_t Value)
 
 void Memory::setLY(uint8_t Value)
 {
-    memory[0xFF44] = Value;
-    if (Value == memory[0xFF45])
+    memory[REG_LY] = Value;
+    if (Value == memory[REG_LYC])
     {
-        memory[0xFF41] = memory[0xFF41] | 0b00000100; // Set LYC == LY
-        memory[0xFF0F] = memory[0xFF0F] | 0b00000010; // Interrupt requested
+        memory[REG_STAT] = memory[REG_STAT] | 0b00000100; // Set LYC == LY
+        memory[REG_IF] = memory[REG_IF] | 0b00000010;     // Interrupt requested
     }
     else
     {
-        memory[0xFF41] = memory[0xFF41] & 0b11111011; // Clear LYC == LY
+        memory[REG_STAT] = memory[REG_STAT] & 0b11111011; // Clear LYC == LY
     }
 }
 void Memory::setPPUMode(uint8_t Value)
 {
-    memory[0xFF41] = (memory[0xFF41] & 0b11111100) + (Value & 0b00000011);
+    memory[REG_STAT] = (memory[REG_STAT] & 0b11111100) + (Value & 0b00000011);
 }
 uint8_t Memory::getPPUMode()
 {
-    return memory[0xFF41] & 0b00000011;
+    return memory[REG_STAT] & 0b00000011;
 }
 
 uint8_t Memory::readMemoryIO(uint16_t Adress)
 {
+    // if(Adress == 0xFF03 || (Adress > readMemory(REG_TAC) && Adress < 0xFF10) || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4D && Adress < 0xFF50) || Adress > 0xFF50)
+    if (Adress == 0xFF03)
+        return 0xFF;
     return memory[Adress];
 }
 
 void Memory::writeMemoryVRAM(uint16_t Adress, uint8_t Value)
 {
-    if (getPPUMode() != 3 || (memory[0xFF40] >> 7) == 0)
+    if (getPPUMode() != 3 || (memory[REG_LCDC] >> 7) == 0)
     {
         memory[Adress] = Value;
     }
@@ -478,7 +485,7 @@ void Memory::writeMemoryVRAM(uint16_t Adress, uint8_t Value)
 
 uint8_t Memory::readMemoryVRAM(uint16_t Adress, bool IsPPU)
 {
-    if (getPPUMode() != 3 || IsPPU || (memory[0xFF40] >> 7) == 0)
+    if (getPPUMode() != 3 || IsPPU || (memory[REG_LCDC] >> 7) == 0)
     {
         return memory[Adress];
     }
@@ -490,7 +497,7 @@ uint8_t Memory::readMemoryVRAM(uint16_t Adress, bool IsPPU)
 
 void Memory::writeMemoryOAM(uint16_t Adress, uint8_t Value)
 {
-    if (getPPUMode() <= 1 || (memory[0xFF40] >> 7) == 0)
+    if (getPPUMode() <= 1 || (memory[REG_LCDC] >> 7) == 0)
     {
         memory[Adress] = Value;
     }
@@ -502,7 +509,7 @@ void Memory::writeMemoryOAM(uint16_t Adress, uint8_t Value)
 
 uint8_t Memory::readMemoryOAM(uint16_t Adress, bool IsPPU)
 {
-    if (getPPUMode() <= 1 || IsPPU  || (memory[0xFF40] >> 7) == 0)
+    if (getPPUMode() <= 1 || IsPPU || (memory[REG_LCDC] >> 7) == 0)
     {
         return memory[Adress];
     }
@@ -514,5 +521,5 @@ uint8_t Memory::readMemoryOAM(uint16_t Adress, bool IsPPU)
 
 void Memory::OAMDMATransfer(uint8_t AdressLow)
 {
-    memory[0xFE00 + AdressLow] = memory[(memory[0xFF46] << 8) + AdressLow];
+    memory[MEM_OAM_START + AdressLow] = memory[(memory[REG_DMA] << 8) + AdressLow];
 }

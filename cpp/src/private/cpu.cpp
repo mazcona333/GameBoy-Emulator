@@ -12,7 +12,7 @@ uint8_t Cpu::readMemory(uint16_t Adress)
 void Cpu::writeMemory(uint16_t Adress, uint8_t Value)
 {
     memory->writeMemory(Adress, Value);
-    if(Adress == 0xFF46)
+    if(Adress == REG_DMA)
         RunningMode = CpuMode::OAMDMATRANSFER;
 }
 
@@ -95,7 +95,7 @@ void Cpu::RunNextOP()
 
 void Cpu::HandleInterrupt()
 {
-    if (readMemory(0xFFFF) & readMemory(0xFF0F)) // Interruption pending
+    if (readMemory(REG_IE) & readMemory(REG_IF)) // Interruption pending
     {
         if (ime)
         {
@@ -113,35 +113,35 @@ void Cpu::HandleInterrupt()
                                         splituint16(pc, &Low, &High);
                                         writeMemory(sp, Low); });
             // Handle interrupt
-            if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x1)
+            if ((readMemory(REG_IE) & readMemory(REG_IF)) & 0x1)
             { // VBlank
                 PendingInstructions.push([this]
                                          { pc = 0x40; });
-                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11111110); // Reset IF
+                writeMemory(REG_IF, readMemory(REG_IF) & 0b11111110); // Reset IF
             }
-            else if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x2)
+            else if ((readMemory(REG_IE) & readMemory(REG_IF)) & 0x2)
             { // LCD
                 PendingInstructions.push([this]
                                          { pc = 0x48; });
-                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11111101); // Reset IF
+                writeMemory(REG_IF, readMemory(REG_IF) & 0b11111101); // Reset IF
             }
-            else if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x4)
+            else if ((readMemory(REG_IE) & readMemory(REG_IF)) & 0x4)
             { // Timer
                 PendingInstructions.push([this]
                                          { pc = 0x50; });
-                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11111011); // Reset IF
+                writeMemory(REG_IF, readMemory(REG_IF) & 0b11111011); // Reset IF
             }
-            else if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x8)
+            else if ((readMemory(REG_IE) & readMemory(REG_IF)) & 0x8)
             { // Serial
                 PendingInstructions.push([this]
                                          { pc = 0x58; });
-                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11110111); // Reset IF
+                writeMemory(REG_IF, readMemory(REG_IF) & 0b11110111); // Reset IF
             }
-            else if ((readMemory(0xFFFF) & readMemory(0xFF0F)) & 0x16)
+            else if ((readMemory(REG_IE) & readMemory(REG_IF)) & 0x16)
             { // Joypad
                 PendingInstructions.push([this]
                                          { pc = 0x60; });
-                writeMemory(0xFF0F, readMemory(0xFF0F) & 0b11101111); // Reset IF
+                writeMemory(REG_IF, readMemory(REG_IF) & 0b11101111); // Reset IF
             }
             ime = 0;
         }
@@ -158,41 +158,41 @@ void Cpu::UpdateTimer()
     {
         memory->IncDivRegister();
     }
-    if (memory->readMemory(0xFF07) & 0x4) // Check if TIMA enabled
+    if (memory->readMemory(REG_TAC) & 0x4) // Check if TIMA enabled
     {
-        switch (memory->readMemory(0xFF07) & 0x3) // Check clock select
+        switch (memory->readMemory(REG_TAC) & 0x3) // Check clock select
         {
         case 0b00: // INC TIMA every 256 M-Cycles
             if (CycleCounter % 256 == 0)
             {
-                memory->writeMemory(0xFF05, memory->readMemory(0xFF05) + 1);
+                memory->writeMemory(REG_TIMA, memory->readMemory(REG_TIMA) + 1);
             }
             break;
         case 0b01: // INC TIMA every 4 M-Cycles
             if (CycleCounter % 4 == 0)
             {
-                memory->writeMemory(0xFF05, memory->readMemory(0xFF05) + 1);
+                memory->writeMemory(REG_TIMA, memory->readMemory(REG_TIMA) + 1);
             }
             break;
         case 0b10: // INC TIMA every 16 M-Cycles
             if (CycleCounter % 16 == 0)
             {
-                memory->writeMemory(0xFF05, memory->readMemory(0xFF05) + 1);
+                memory->writeMemory(REG_TIMA, memory->readMemory(REG_TIMA) + 1);
             }
             break;
         case 0b11: // INC TIMA every 64 M-Cycles
             if (CycleCounter % 64 == 0)
             {
-                memory->writeMemory(0xFF05, memory->readMemory(0xFF05) + 1);
+                memory->writeMemory(REG_TIMA, memory->readMemory(REG_TIMA) + 1);
             }
             break;
         default:
             break;
         }
-        if (memory->readMemory(0xFF05) == 0) // TIMA overflow
+        if (memory->readMemory(REG_TIMA) == 0) // TIMA overflow
         {
-            memory->writeMemory(0xFF05, memory->readMemory(0xFF06));
-            memory->writeMemory(0xFF0F, memory->readMemory(0xFF0F) | 0b00000100); // Request TIMER interrupt
+            memory->writeMemory(REG_TIMA, memory->readMemory(REG_TMA));
+            memory->writeMemory(REG_IF, memory->readMemory(REG_IF) | 0b00000100); // Request TIMER interrupt
         }
     }
 }
@@ -1742,7 +1742,7 @@ void Cpu::OP_HALT()
     }
     else
     {
-        if (readMemory(0xFFFF) & readMemory(0xFF0F)) // Interruption pending
+        if (readMemory(REG_IE) & readMemory(REG_IF)) // Interruption pending
         {
             // The CPU continues execution after the HALT, but the byte after it is read twice in a row (PC is not incremented, due to a hardware bug).
         }
@@ -1758,7 +1758,7 @@ void Cpu::OP_STOP()
 {
     //  TODO Enter CPU very low power mode. Also used to switch between double and normal speed CPU modes in GBC.
     PendingInstructions.push([this]
-                             { writeMemory(0xFF04, 0); });
+                             { writeMemory(REG_DIV, 0); });
 }
 void Cpu::OP_DI()
 {
