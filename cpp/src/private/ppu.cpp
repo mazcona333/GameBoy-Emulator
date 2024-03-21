@@ -8,6 +8,11 @@ Ppu::Ppu(Memory *memory, std::function<void(uint8_t *RawPixels, uint8_t row)> Up
     ObjectPixelFetcher = new PixelFetcher(memory, &ObjectPixelFIFO, PixelFetcher::FetchingMode::SPRITE);
 }
 
+Ppu::~Ppu(){
+    delete ObjectPixelFetcher;
+    delete BackgroundPixelFetcher;
+}
+
 void Ppu::Tick()
 {
     if ((memory->readMemory(REG_LCDC) >> 7) == 0)

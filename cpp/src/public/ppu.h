@@ -84,6 +84,7 @@ class Ppu
 {
 public:
     Ppu(Memory *memory, std::function<void(uint8_t *RawPixels, uint8_t row)> UpdateDisplay);
+    ~Ppu();
     void Tick();
     uint8_t *getDisplay();
 

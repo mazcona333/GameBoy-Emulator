@@ -10,6 +10,12 @@ Gb::Gb(std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplay, bool 
     ppu = new Ppu(memory, UpdateDisplay);
 }
 
+Gb::~Gb(){
+    delete memory;
+    delete cpu;
+    delete ppu;
+}
+
 bool Gb::loadROM(char const *filename)
 {
     bool RomLoaded = false;

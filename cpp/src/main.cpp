@@ -49,8 +49,11 @@ int main(int argc, char const *argv[])
             lastCycleTime = currentTime;
             gb->Tick();
             //std::cout << dt << "\n";
-            //platform->Update(gb->getDisplay());
         }
     }
+
+    delete platform;
+    delete gb;
+
     return 0;
 }
