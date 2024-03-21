@@ -12,7 +12,7 @@
 class Gb
 {
 public:
-    Gb(std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplay, bool Debug = false);
+    Gb(std::function<void(uint8_t* RawPixels, uint8_t row)> UpdateDisplay, bool Debug = false, bool CycleAccurate = false);
     ~Gb();
     bool loadROM(char const *filename);
     void Tick();
@@ -23,6 +23,8 @@ private:
     Memory* memory;
     Ppu* ppu;
     uint8_t CycleCounter = 0;
+    bool CycleAccurate;
+    bool BootRomEnabled = true;
 };
 
 #endif // GB_H

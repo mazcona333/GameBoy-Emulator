@@ -4,7 +4,7 @@ class CpuDebug : public Cpu
 {
 public:
 
-CpuDebug(Memory* mem);
+CpuDebug(Memory* mem, bool EmulateMCycles);
 void setPc(uint16_t newPc) { pc = newPc; }
 uint16_t getPc() { return pc; }
 void setSp(uint16_t newSp) { sp = newSp; }

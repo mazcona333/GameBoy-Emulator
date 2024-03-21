@@ -136,7 +136,7 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     }
 }
 
-bool Memory::loadCartridge(char const *filename, bool boot)
+bool Memory::loadToMemory(char const *filename, bool boot)
 {
     std::ifstream file(filename, std::ios::binary | std::ios::in);
 
@@ -176,7 +176,9 @@ bool Memory::loadCartridge(char const *filename, bool boot)
                     break;
                 }
             }
-            if (DebugMode || (CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09) || boot)
+            if (boot)
+                BootROM[i] = c;
+            else if (DebugMode || (CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
                 memory[i] = c;
             else
                 cartridgeROM[i / (ROMBANK_SIZE)][i % (ROMBANK_SIZE)] = c;
@@ -204,18 +206,18 @@ bool Memory::loadCartridge(char const *filename, bool boot)
     }
 }
 
-bool Memory::loadROM(char const *filename)
+bool Memory::loadROM(char const *filename, bool BootEnabled)
 {
-    bool romLoaded = loadCartridge(filename);
+    BootRomEnabled = BootEnabled;
+    bool romLoaded = loadToMemory(filename);
     bool bootLoaded = loadBoot();
     return romLoaded && bootLoaded;
 }
 
 bool Memory::loadBoot()
 {
-    // TODO
     if (BootRomEnabled)
-        return loadCartridge("..\\..\\roms\\boot\\dmg_boot.bin", true);
+        return loadToMemory("..\\..\\roms\\boot\\dmg_boot.bin", true);
     else
     {
         memory[REG_JOYP] = 0xCF;
@@ -276,19 +278,28 @@ void Memory::setInput(uint8_t input)
 
 uint8_t Memory::readMemoryROMBank0(uint16_t Adress)
 {
+    if (!memory[REG_BANK] && BootRomEnabled && Adress <= 0x100)
+    {
+        return BootROM[Adress];
+    }
+
     uint8_t nBank = 0;
-    if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09) || (!memory[REG_BANK] && BootRomEnabled))
+    if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
         return memory[Adress];
     else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
     {
-        if (nRomBanks < 64)
+        if (!memory[0x6000]) // If Banking Mode == 0
+        {
             return cartridgeROM[nBank][Adress];
+        }
         else
         {
-            // TODO
-            std::cout << "Cartridge larger than 1MiB not supported\n";
-            throw std::length_error("Cartridge larger than 1MiB not supported");
+            nBank = (memory[0x4000] << 5) + nBank;
         }
+        return cartridgeROM[nBank & (nRomBanks - 1)][Adress];
+    }
+    else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
+    {
     }
     else
     {
@@ -303,21 +314,12 @@ uint8_t Memory::readMemoryROMBankN(uint16_t Adress)
         return memory[Adress + ROMBANK_SIZE];
     else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
     {
-        if (nRomBanks < 64)
-        {
-            nBank = memory[0x2000];
-            if (!memory[0x6000]) // If Banking Mode == 0, take upper 2 bits
-            {
-                nBank = (memory[0x4000] << 5) + nBank;
-            }
-            return cartridgeROM[nBank][Adress];
-        }
-        else
-        {
-            // TODO
-            std::cout << "MBC not supported\n";
-            throw std::length_error("MBC not supported");
-        }
+        nBank = memory[0x2000];
+        nBank = (memory[0x4000] << 5) + nBank;
+        return cartridgeROM[nBank & (nRomBanks - 1)][Adress];
+    }
+    else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
+    {
     }
     else
     {
@@ -328,17 +330,24 @@ uint8_t Memory::readMemoryROMBankN(uint16_t Adress)
 uint8_t Memory::readMemoryRAMBank(uint16_t Adress)
 {
     uint8_t nBank = 0;
-    if (nRamBanks > 1 && (memory[0x0000] & 0xF) == 0xA)
+    if (nRamBanks > 0)
     {
         if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-            return cartridgeRAM[nBank][Adress];
-        else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
+            return cartridgeRAM[0][Adress];
+        else if ((CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03) && (memory[0x0000] & 0xF) == 0xA)
         {
             if (memory[0x6000]) // If Banking Mode == 1
             {
                 nBank = memory[0x4000];
             }
-            return cartridgeRAM[nBank][Adress];
+            else
+            {
+                nBank = 0;
+            }
+            return cartridgeRAM[nBank & (nRamBanks - (nRamBanks > 1) ? 1 : 0)][Adress];
+        }
+        else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
+        {
         }
         else
         {
@@ -355,17 +364,24 @@ uint8_t Memory::readMemoryRAMBank(uint16_t Adress)
 void Memory::writeMemoryRAMBank(uint16_t Adress, uint8_t Value)
 {
     uint8_t nBank = 0;
-    if (nRamBanks > 1 && (memory[0x0000] & 0xF) == 0xA)
+    if (nRamBanks > 0)
     {
         if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-            cartridgeRAM[nBank][Adress] = Value;
-        else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
+            cartridgeRAM[0][Adress] = Value;
+        else if ((CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03) && (memory[0x0000] & 0xF) == 0xA)
         {
             if (memory[0x6000]) // If Banking Mode == 1
             {
                 nBank = memory[0x4000];
             }
-            cartridgeRAM[nBank][Adress] = Value;
+            else
+            {
+                nBank = 0;
+            }
+            cartridgeRAM[nBank & (nRamBanks - (nRamBanks > 1) ? 1 : 0)][Adress] = Value;
+        }
+        else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
+        {
         }
         else
         {
@@ -402,6 +418,9 @@ void Memory::writeMBCRegister(uint16_t Adress, uint8_t Value)
         {                                        // Banking Mode Select
             memory[0x6000] = Value & 0b00000001; // 1-bit register
         }
+    }
+    else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
+    {
     }
     else
     {

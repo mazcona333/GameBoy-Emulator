@@ -28,10 +28,10 @@
 class Cpu
 {
 public:
-    Cpu(Memory* memory);
-    void Tick();
+    Cpu(Memory* memory, bool CycleAccurate);
+    uint8_t Tick();
     void RunNextOP();
-    bool loadROM(char const *filename);
+    void SetBootedState();
 protected:
     Memory* memory;
 
@@ -42,6 +42,7 @@ protected:
     CpuMode RunningMode = CpuMode::NORMAL;
 
     uint8_t CycleCounter = 0;
+    bool CycleAccurate = false;
 
     struct
     {
@@ -66,7 +67,7 @@ protected:
     uint8_t W = 0;
     void ExecutePrefixedOP();
     void HandleInterrupt();
-    void UpdateTimer();
+    void UpdateTimer(uint8_t Cycle);
 
     void OP_NOP();
     void OP_LD_r8imm8(uint8_t DestRegister);

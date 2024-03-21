@@ -1,6 +1,6 @@
 #include "..\public\cpuDebug.h"
 
-CpuDebug::CpuDebug(Memory *mem) : Cpu(mem)
+CpuDebug::CpuDebug(Memory *mem, bool EmulateMCycles) : Cpu(mem, EmulateMCycles)
 {
 }
 

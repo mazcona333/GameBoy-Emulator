@@ -25,6 +25,7 @@
 
 #define MEMORY_SIZE (0xFFFF + 1)
 
+#define BOOTROM_SIZE (0x100 + 1)
 #define MAX_ROMBANK 512
 #define ROMBANK_SIZE (0x3FFF + 1)
 #define MAX_RAMBANK 16
@@ -38,7 +39,7 @@ class Memory
 public:
     Memory(bool DebugMode = false);
 
-    bool loadROM(char const *filename);
+    bool loadROM(char const *filename, bool BootEnabled);
 
     uint8_t readMemory(uint16_t Adress, bool IsPPU = false);
     void writeMemory(uint16_t Adress, uint8_t Value);
@@ -55,11 +56,12 @@ public:
 private:
     uint8_t memory[MEMORY_SIZE] = {0};
 
-    bool BootRomEnabled = 0;
-    bool loadCartridge(char const *filename, bool boot = false);
+    bool BootRomEnabled = 1;
+    bool loadToMemory(char const *filename, bool boot = false);
     bool loadBoot();
 
     uint8_t CartridgeType;
+    uint8_t BootROM[BOOTROM_SIZE];
     uint8_t nRomBanks;
     ROMbank cartridgeROM[MAX_ROMBANK];
     uint8_t nRamBanks;

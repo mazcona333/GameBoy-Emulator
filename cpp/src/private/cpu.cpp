@@ -1,7 +1,12 @@
 #include "../public/cpu.h"
 
-Cpu::Cpu(Memory *memory) : memory(memory)
+Cpu::Cpu(Memory *memory, bool EmulateMCycles) : memory(memory), CycleAccurate(EmulateMCycles)
 {
+    if (!EmulateMCycles)
+    {
+        CycleCounter++;
+        UpdateTimer(CycleCounter);
+    }
 }
 
 uint8_t Cpu::readMemory(uint16_t Adress)
@@ -12,13 +17,12 @@ uint8_t Cpu::readMemory(uint16_t Adress)
 void Cpu::writeMemory(uint16_t Adress, uint8_t Value)
 {
     memory->writeMemory(Adress, Value);
-    if(Adress == REG_DMA)
+    if (Adress == REG_DMA)
         RunningMode = CpuMode::OAMDMATRANSFER;
 }
 
-bool Cpu::loadROM(char const *filename)
+void Cpu::SetBootedState()
 {
-    // TODO Boot ROM
     registers.a = 0x01;
     registers.f = 0xB0;
     registers.b = 0x00;
@@ -29,13 +33,14 @@ bool Cpu::loadROM(char const *filename)
     registers.l = 0x4D;
     pc = 0x100;
     sp = 0xFFFE;
-
-    return memory->loadROM(filename);
 }
 
-void Cpu::Tick()
+uint8_t Cpu::Tick()
 {
-    CycleCounter++;
+    uint8_t PrevCycleCounter = CycleCounter;
+
+    if (CycleAccurate)
+        CycleCounter++;
     switch (RunningMode)
     {
     case CpuMode::NORMAL:
@@ -45,15 +50,28 @@ void Cpu::Tick()
             PendingInstructions.pop();
         }
         HandleInterrupt();
+        if (!CycleAccurate)
+        {
+            RunNextOP();
+        }
         if (PendingInstructions.empty())
         {
             FetchNextOP();
+            if (!CycleAccurate)
+            {
+                RunNextOP();
+            }
         }
         break;
 
     case CpuMode::HALT:
     case CpuMode::STOP:
         HandleInterrupt();
+        if (!CycleAccurate)
+        {
+            CycleCounter++;
+            RunNextOP();
+        }
         break;
 
     case CpuMode::ENABLEIME:
@@ -65,31 +83,52 @@ void Cpu::Tick()
             PendingInstructions.pop();
         }
         HandleInterrupt();
+        if (!CycleAccurate)
+        {
+            RunNextOP();
+        }
         if (PendingInstructions.empty())
         {
             FetchNextOP();
+            if (!CycleAccurate)
+            {
+                RunNextOP();
+            }
         }
         break;
-    case CpuMode::OAMDMATRANSFER:
-        memory->OAMDMATransfer(OAMDMATransferCounter);
+    case CpuMode::OAMDMATRANSFER: // TODO
+        /* memory->OAMDMATransfer(OAMDMATransferCounter);
         OAMDMATransferCounter++;
         if(OAMDMATransferCounter % 0xA == 0)
-            RunningMode = CpuMode::NORMAL;
+            RunningMode = CpuMode::NORMAL; */
         break;
 
     default: // Never happens
         break;
     }
-    UpdateTimer();
+
+    if (!CycleAccurate)
+    {
+        for (size_t i = 1; i <= (uint8_t)(CycleCounter - PrevCycleCounter) + 1; i++)
+        {
+            UpdateTimer(PrevCycleCounter + i);
+        }
+    }
+    else
+        UpdateTimer(CycleCounter);
+
+    return CycleCounter - PrevCycleCounter;
 }
 
 void Cpu::RunNextOP()
 {
-    FetchNextOP();
+    // CycleCounter = 0;
+    // FetchNextOP();
     while (PendingInstructions.size() > 0)
     {
         PendingInstructions.front()();
         PendingInstructions.pop();
+        CycleCounter++;
     }
 }
 
@@ -152,9 +191,9 @@ void Cpu::HandleInterrupt()
     }
 }
 
-void Cpu::UpdateTimer()
+void Cpu::UpdateTimer(uint8_t Cycle)
 {
-    if (CycleCounter % 64 == 0)
+    if (Cycle % 64 == 0)
     {
         memory->IncDivRegister();
     }
@@ -163,25 +202,25 @@ void Cpu::UpdateTimer()
         switch (memory->readMemory(REG_TAC) & 0x3) // Check clock select
         {
         case 0b00: // INC TIMA every 256 M-Cycles
-            if (CycleCounter % 256 == 0)
+            if (Cycle % 256 == 0)
             {
                 memory->writeMemory(REG_TIMA, memory->readMemory(REG_TIMA) + 1);
             }
             break;
         case 0b01: // INC TIMA every 4 M-Cycles
-            if (CycleCounter % 4 == 0)
+            if (Cycle % 4 == 0)
             {
                 memory->writeMemory(REG_TIMA, memory->readMemory(REG_TIMA) + 1);
             }
             break;
         case 0b10: // INC TIMA every 16 M-Cycles
-            if (CycleCounter % 16 == 0)
+            if (Cycle % 16 == 0)
             {
                 memory->writeMemory(REG_TIMA, memory->readMemory(REG_TIMA) + 1);
             }
             break;
         case 0b11: // INC TIMA every 64 M-Cycles
-            if (CycleCounter % 64 == 0)
+            if (Cycle % 64 == 0)
             {
                 memory->writeMemory(REG_TIMA, memory->readMemory(REG_TIMA) + 1);
             }

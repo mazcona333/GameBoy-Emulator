@@ -331,14 +331,14 @@ void PixelFetcher::FetchTileDataHigh()
         TileDataBaseAdress = 0x8000;
         uint16_t TileAdress = TileDataBaseAdress + (TileMapNo * 0x10);
         uint16_t TileAdressOffset = 2 * ((LY + SCY) % 8);
-        TileDataLow = memory->readMemory(TileAdress + TileAdressOffset + 1, true);
+        TileDataHigh = memory->readMemory(TileAdress + TileAdressOffset + 1, true);
     }
     else
     {
         TileDataBaseAdress = 0x9000;
         uint16_t TileAdress = TileDataBaseAdress + ((int8_t)TileMapNo * 0x10);
         uint16_t TileAdressOffset = 2 * ((LY + SCY) % 8);
-        TileDataLow = memory->readMemory(TileAdress + TileAdressOffset + 1, true);
+        TileDataHigh = memory->readMemory(TileAdress + TileAdressOffset + 1, true);
     }
 }
 
