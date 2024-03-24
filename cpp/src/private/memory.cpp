@@ -6,6 +6,14 @@
 
 Memory::Memory(bool DebugMode) : DebugMode(DebugMode)
 {
+    for (int i = 0xA000; i < 0xE000; i++)
+    {
+        memory[i] = (rand() % 0x100);
+    }
+    for (int i = 0xFF80; i < 0xFFFF; i++)
+    {
+        memory[i] = (rand() % 0x100);
+    }
 }
 
 uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
@@ -114,8 +122,8 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE TODO
     {
         std::cout << "Attempted to write not usable memory\n";
-        // throw std::out_of_range("Attempted to write not usable memory");
-        memory[Adress] = Value;
+        //  throw std::out_of_range("Attempted to write not usable memory");
+        // memory[Adress] = Value;
     }
     else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
     {
@@ -178,7 +186,7 @@ bool Memory::loadToMemory(char const *filename, bool boot)
             }
             if (boot)
                 BootROM[i] = c;
-            else if (DebugMode || (CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
+            else if (DebugMode)
                 memory[i] = c;
             else
                 cartridgeROM[i / (ROMBANK_SIZE)][i % (ROMBANK_SIZE)] = c;
@@ -218,6 +226,7 @@ bool Memory::loadBoot()
 {
     if (BootRomEnabled)
         return loadToMemory("..\\..\\roms\\boot\\dmg_boot.bin", true);
+        //return loadToMemory("..\\..\\roms\\boot\\mgb_boot.bin", true);
     else
     {
         memory[REG_JOYP] = 0xCF;
@@ -261,6 +270,7 @@ bool Memory::loadBoot()
         // memory[0xFF49] = 0xCF;
         memory[0xFF4A] = 0x00;
         memory[0xFF4B] = 0x00;
+        memory[REG_BANK] = 0xFF;
         return true;
     }
 }
@@ -285,7 +295,7 @@ uint8_t Memory::readMemoryROMBank0(uint16_t Adress)
 
     uint8_t nBank = 0;
     if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-        return memory[Adress];
+        return cartridgeROM[0][Adress];
     else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
     {
         if (!memory[0x6000]) // If Banking Mode == 0
@@ -311,7 +321,7 @@ uint8_t Memory::readMemoryROMBankN(uint16_t Adress)
 {
     uint8_t nBank = 1;
     if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-        return memory[Adress + ROMBANK_SIZE];
+        return cartridgeROM[1][Adress];
     else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
     {
         nBank = memory[0x2000];
@@ -395,7 +405,10 @@ void Memory::writeMemoryRAMBank(uint16_t Adress, uint8_t Value)
 void Memory::writeMBCRegister(uint16_t Adress, uint8_t Value)
 {
     if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-        memory[Adress] = Value;
+    {
+        //memory[Adress] = Value;
+        std::cout << "Writting to ROM\n";
+    }
     else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
     {
         if (Adress >= 0x0000 && Adress <= 0x1FFF)
@@ -437,8 +450,13 @@ void Memory::writeMemoryIO(uint16_t Adress, uint8_t Value)
         std::cout << (char)readMemory(0xFF01); // SB
     }
 
-    // if(Adress == 0xFF03 || (Adress > readMemory(REG_TAC) && Adress < 0xFF10) || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4D && Adress < 0xFF50) || Adress > 0xFF50)
-    if (Adress == 0xFF03)
+    if (Adress == 0xFF50 && Value == 0xFF)
+    {
+        //memory[REG_DIV] = 0xAD; // TODO REMOVE bypass bully test div
+    }
+
+    if (Adress == 0xFF03 || (Adress > 0xFF07 && Adress < 0xFF10) || Adress == 0xFF15 || Adress == 0xFF1F || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4B && Adress < 0xFF50) || Adress > 0xFF50)
+        // if (Adress == 0xFF03)
         return;
 
     if (Adress == REG_DIV) // DIV
@@ -484,8 +502,8 @@ uint8_t Memory::getPPUMode()
 
 uint8_t Memory::readMemoryIO(uint16_t Adress)
 {
-    // if(Adress == 0xFF03 || (Adress > readMemory(REG_TAC) && Adress < 0xFF10) || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4D && Adress < 0xFF50) || Adress > 0xFF50)
-    if (Adress == 0xFF03)
+    if (Adress == 0xFF03 || (Adress > 0xFF07 && Adress < 0xFF10) || Adress == 0xFF15 || Adress == 0xFF1F || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4B && Adress < 0xFF50) || Adress > 0xFF50)
+        // if (Adress == 0xFF03)
         return 0xFF;
     return memory[Adress];
 }
