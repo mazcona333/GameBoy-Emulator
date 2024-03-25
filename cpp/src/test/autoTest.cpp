@@ -122,7 +122,7 @@ bool checkFinalState(CpuDebug *cpu, nlohmann::json test)
     return passed;
 }
 
-bool test(CpuDebug *cpu, std::string testsString)
+bool test(std::string testsString)
 {
     bool passed = true;
 
@@ -131,9 +131,17 @@ bool test(CpuDebug *cpu, std::string testsString)
     {
         nlohmann::json test = nlohmann::json::parse(nextTest.c_str());
         std::cout << test["name"];
+
+        Memory *memory = new Memory(true);
+        CpuDebug *cpu = new CpuDebug(memory, false);
         setInitialState(cpu, test);
-        cpu->RunNextOP();
+
+        cpu->Tick();
         passed = checkFinalState(cpu, test) && passed;
+
+        delete cpu;
+        delete memory;
+
         nextTest = getNextTest(&testsString);
         if (!passed)
             break;
@@ -141,9 +149,17 @@ bool test(CpuDebug *cpu, std::string testsString)
     // Check last test
     nlohmann::json test = nlohmann::json::parse(nextTest.c_str());
     std::cout << test["name"];
+
+    Memory *memory = new Memory(true);
+    CpuDebug *cpu = new CpuDebug(memory, false);
     setInitialState(cpu, test);
-    cpu->RunNextOP();
+
+    cpu->Tick();
     passed = checkFinalState(cpu, test) && passed;
+
+    delete cpu;
+    delete memory;
+
     nextTest = getNextTest(&testsString);
     return passed;
 }
@@ -151,12 +167,10 @@ bool test(CpuDebug *cpu, std::string testsString)
 int main(int argc, char const *argv[])
 {
     bool passed = true;
-    Memory* memory = new Memory(true);
-    CpuDebug* cpu = new CpuDebug(memory);
     for (size_t i = 0x00; i <= 0xFF; i++)
     {
         // Skip illegal instructions
-        if(i == 0xD3 || i == 0xDB || i == 0xDD || i == 0xE3 || i == 0xE4 || i == 0xEB || i == 0xEC || i == 0xED || i == 0xF4 || i == 0xFC || i == 0xFD)
+        if (i == 0xD3 || i == 0xDB || i == 0xDD || i == 0xE3 || i == 0xE4 || i == 0xEB || i == 0xEC || i == 0xED || i == 0xF4 || i == 0xFC || i == 0xFD)
             continue;
 
         // Check prefixed instructions
@@ -170,7 +184,7 @@ int main(int argc, char const *argv[])
 
             std::string testsString = readTestFile(testPath.c_str());
 
-            passed = test(cpu, testsString) && passed;
+            passed = test(testsString) && passed;
 
             if (!passed)
                 break;
@@ -186,17 +200,15 @@ int main(int argc, char const *argv[])
 
                 std::string testsString = readTestFile(testPath.c_str());
 
-                passed = test(cpu, testsString) && passed;
+                passed = test(testsString) && passed;
 
                 if (!passed)
                     break;
             }
         }
     }
-    if(passed)
+    if (passed)
         std::cout << "All tests passed";
-
-    delete cpu;
 
     return 0;
 }

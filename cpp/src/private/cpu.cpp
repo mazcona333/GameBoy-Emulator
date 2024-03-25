@@ -4,7 +4,7 @@ Cpu::Cpu(Memory *memory, bool EmulateMCycles) : memory(memory), CycleAccurate(Em
 {
     if (!EmulateMCycles)
     {
-        CycleCounter++;
+        //CycleCounter++;
         UpdateTimer(CycleCounter);
     }
 }
@@ -17,8 +17,8 @@ uint8_t Cpu::readMemory(uint16_t Adress)
 void Cpu::writeMemory(uint16_t Adress, uint8_t Value)
 {
     memory->writeMemory(Adress, Value);
-    if (Adress == REG_DMA)
-        RunningMode = CpuMode::OAMDMATRANSFER;
+    //if (Adress == REG_DMA)
+        //RunningMode = CpuMode::OAMDMATRANSFER; // TODO
 }
 
 void Cpu::SetBootedState()
@@ -239,6 +239,8 @@ void Cpu::UpdateTimer(uint8_t Cycle)
 void Cpu::FetchNextOP()
 {
     uint8_t OpCode = readMemory(pc++);
+
+    LastOP = OpCode;
 
     uint8_t OpCodePart1 = OpCode >> 6;
     uint8_t OpCodePart2 = (OpCode & 0b00111000) >> 3; // Read only bits 4,5,6

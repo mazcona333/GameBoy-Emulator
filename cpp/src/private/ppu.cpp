@@ -8,7 +8,8 @@ Ppu::Ppu(Memory *memory, std::function<void(uint8_t *RawPixels, uint8_t row)> Up
     ObjectPixelFetcher = new PixelFetcher(memory, &ObjectPixelFIFO, PixelFetcher::FetchingMode::SPRITE);
 }
 
-Ppu::~Ppu(){
+Ppu::~Ppu()
+{
     delete ObjectPixelFetcher;
     delete BackgroundPixelFetcher;
 }
@@ -36,7 +37,11 @@ void Ppu::Tick()
     else if (getLY() >= 144)
     {
         if (getPPUMode() != PpuMode::VBLANK)
+        {
             setPPUMode(PpuMode::VBLANK);
+            if (memory->readMemory(REG_STAT, true) & 0b00010000)                            // Mode 1 int select
+                memory->writeMemory(REG_IF, memory->readMemory(REG_IF, true) | 0b00000010); // STAT interrupt requested
+        }
     }
     else if (DotCounter < 80)
     {
@@ -44,6 +49,8 @@ void Ppu::Tick()
         {
             setPPUMode(PpuMode::OAMSCAN);
             OAMBuffer.clear();
+            if (memory->readMemory(REG_STAT, true) & 0b00100000)                            // Mode 2 int select
+                memory->writeMemory(REG_IF, memory->readMemory(REG_IF, true) | 0b00000010); // STAT interrupt requested
         }
         OAMScanStep();
     }
@@ -108,13 +115,21 @@ void Ppu::Tick()
     else
     {
         if (getPPUMode() != PpuMode::HBLANK)
+        {
             setPPUMode(PpuMode::HBLANK);
+            if (memory->readMemory(REG_STAT, true) & 0b00001000)                            // Mode 0 int select
+                memory->writeMemory(REG_IF, memory->readMemory(REG_IF, true) | 0b00000010); // STAT interrupt requested
+        }
     }
 
     DotCounter = (DotCounter + 1) % 456;
     if (DotCounter == 0)
     {
         setLY((getLY() + 1) % 154);
+
+        if (memory->readMemory(REG_STAT, true) & 0b01000000 && memory->readMemory(REG_LY, true) == memory->readMemory(REG_LYC, true)) // LYC int select and LY == LYC
+            memory->writeMemory(REG_IF, memory->readMemory(REG_IF, true) | 0b00000010);                                               // STAT interrupt requested
+
         hPixelDrawing = 0;
 
         if (getLY() == 0 && !Disabled && WaitFrame)
@@ -127,10 +142,10 @@ void Ppu::renderPixel(uint8_t LX, uint8_t LY)
     uint8_t SCX = memory->readMemory(REG_SCX);
     if (BackgroundPixelFIFO.empty())
         return;
-    if (LX < SCX)
+    /* if (LX < SCX)
     {
         BackgroundPixelFIFO.pop();
-    }
+    } */
 
     uint8_t ColorID = BackgroundPixelFIFO.front().Color;
     BackgroundPixelFIFO.pop();
@@ -161,9 +176,9 @@ void Ppu::renderPixel(uint8_t LX, uint8_t LY)
     if (!Disabled && !WaitFrame)
     {
         Display[(LY * RES_W + LX) * 4 + 0] = 0xFF;
-        Display[(LY * RES_W + LX) * 4 + 1] = 0xF0 * (3 - FinalColor) / 3;
-        Display[(LY * RES_W + LX) * 4 + 2] = 0xF0 * (3 - FinalColor) / 3;
-        Display[(LY * RES_W + LX) * 4 + 3] = 0xF0 * (3 - FinalColor) / 3;
+        Display[(LY * RES_W + LX) * 4 + 1] = 0xFF * (3 - FinalColor) / 3;
+        Display[(LY * RES_W + LX) * 4 + 2] = 0xFF * (3 - FinalColor) / 3;
+        Display[(LY * RES_W + LX) * 4 + 3] = 0xFF * (3 - FinalColor) / 3;
     }
     else
     {

@@ -407,6 +407,7 @@ void Memory::writeMBCRegister(uint16_t Adress, uint8_t Value)
     if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
     {
         //memory[Adress] = Value;
+        //cartridgeRAM[Adress / ROMBANK_SIZE][Adress] = Value;
         std::cout << "Writting to ROM\n";
     }
     else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
@@ -467,7 +468,7 @@ void Memory::writeMemoryIO(uint16_t Adress, uint8_t Value)
     {                           // LCD
         if (Adress == REG_STAT) // STAT 7 ignored, 2,1,0 read only
         {
-            Value = (Value & 0b01111000) & memory[REG_STAT];
+            Value = (Value & 0b01111000) + (memory[REG_STAT] & 0b00000111);
         }
         else if (Adress == REG_LY) // LY READ ONLY
         {
@@ -484,7 +485,6 @@ void Memory::setLY(uint8_t Value)
     if (Value == memory[REG_LYC])
     {
         memory[REG_STAT] = memory[REG_STAT] | 0b00000100; // Set LYC == LY
-        memory[REG_IF] = memory[REG_IF] | 0b00000010;     // Interrupt requested
     }
     else
     {

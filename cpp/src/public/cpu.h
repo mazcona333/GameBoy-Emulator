@@ -59,6 +59,8 @@ protected:
     uint16_t sp = 0;
     uint8_t ime = 0;
 
+    uint8_t LastOP;
+
     uint8_t readMemory(uint16_t Adress);
     void writeMemory(uint16_t Adress, uint8_t Value);
 

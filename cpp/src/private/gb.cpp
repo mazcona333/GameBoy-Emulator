@@ -39,9 +39,8 @@ void Gb::Tick()
     else
     {
         uint8_t CatchupMCycles;
-
-        if (CycleCounter % 4 == 0 || !CycleAccurate)
-            CatchupMCycles = cpu->Tick();
+        
+        CatchupMCycles = cpu->Tick();
 
         for (size_t i = 0; i < (CatchupMCycles * 4); i++)
         {

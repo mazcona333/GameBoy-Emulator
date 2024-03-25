@@ -24,7 +24,7 @@ private:
     Ppu* ppu;
     uint8_t CycleCounter = 0;
     bool CycleAccurate;
-    bool BootRomEnabled = true;
+    bool BootRomEnabled = false;
 };
 
 #endif // GB_H

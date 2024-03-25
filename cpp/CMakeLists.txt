@@ -7,7 +7,7 @@ set(SDL2_DIR ../../SDL2-2.24.0/cmake)
 
 find_package(SDL2 REQUIRED)
 
-# set(SOURCE_FILES src/test/autoTest.cpp src/private/gb.cpp src/private/cpu.cpp src/private/cpuDebug.cpp src/private/ppu.cpp src/private/memory.cpp src/nlohmann/json.hpp)
+# set(SOURCE_FILES src/test/autoTest.cpp src/private/gb.cpp src/private/cpu.cpp src/private/cpuDebug.cpp src/private/ppu.cpp src/private/memory.cpp src/private/platform.cpp)
 set(SOURCE_FILES src/main.cpp src/private/gb.cpp src/private/cpu.cpp src/private/cpuDebug.cpp src/private/ppu.cpp src/private/memory.cpp src/private/platform.cpp)
 
 add_executable(
