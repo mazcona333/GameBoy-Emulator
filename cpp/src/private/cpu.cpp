@@ -75,7 +75,6 @@ uint8_t Cpu::Tick()
         break;
 
     case CpuMode::ENABLEIME:
-        ime = 1;
         RunningMode = Cpu::NORMAL;
         if (PendingInstructions.size() > 0)
         {
@@ -94,6 +93,7 @@ uint8_t Cpu::Tick()
             {
                 RunNextOP();
             }
+            ime = 1;
         }
         break;
     case CpuMode::OAMDMATRANSFER: // TODO

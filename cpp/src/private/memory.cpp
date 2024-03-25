@@ -455,7 +455,7 @@ void Memory::writeMemoryIO(uint16_t Adress, uint8_t Value)
         //memory[REG_DIV] = 0xAD; // TODO REMOVE bypass bully test div
     }
 
-    if (Adress == 0xFF03 || (Adress > 0xFF07 && Adress < 0xFF10) || Adress == 0xFF15 || Adress == 0xFF1F || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4B && Adress < 0xFF50) || Adress > 0xFF50)
+    if (Adress == 0xFF03 || (Adress > 0xFF07 && Adress < 0xFF0F) || Adress == 0xFF15 || Adress == 0xFF1F || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4B && Adress < 0xFF50) || Adress > 0xFF50)
         // if (Adress == 0xFF03)
         return;
 
@@ -502,7 +502,7 @@ uint8_t Memory::getPPUMode()
 
 uint8_t Memory::readMemoryIO(uint16_t Adress)
 {
-    if (Adress == 0xFF03 || (Adress > 0xFF07 && Adress < 0xFF10) || Adress == 0xFF15 || Adress == 0xFF1F || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4B && Adress < 0xFF50) || Adress > 0xFF50)
+    if (Adress == 0xFF03 || (Adress > 0xFF07 && Adress < 0xFF0F) || Adress == 0xFF15 || Adress == 0xFF1F || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4B && Adress < 0xFF50) || Adress > 0xFF50)
         // if (Adress == 0xFF03)
         return 0xFF;
     return memory[Adress];
