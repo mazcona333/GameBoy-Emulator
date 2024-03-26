@@ -17,12 +17,12 @@ int main(int argc, char const *argv[])
     platform = new Platform(WINDOW_W, WINDOW_H, RES_W, RES_H, sizeof(gb->getDisplay()[0]) * RES_W * 4);
 
     bool RomLoadCorrect;
-    //RomLoadCorrect = gb->loadROM("..\\..\\roms\\blargg\\cpu_instrs\\cpu_instrs.gb");               // Passed all tests
+    RomLoadCorrect = gb->loadROM("..\\..\\roms\\blargg\\cpu_instrs\\cpu_instrs.gb");               // Passed all tests
     //RomLoadCorrect = gb->loadROM("..\\..\\roms\\blargg\\instr_timing\\instr_timing.gb");           // Timer doesn't  work properly     Failed #2
     //RomLoadCorrect = gb->loadROM("..\\..\\roms\\blargg\\interrupt_time\\interrupt_time.gb");       // Nothing
     //RomLoadCorrect = gb->loadROM("..\\..\\roms\\blargg\\mem_timing\\mem_timing.gb");               // 01:ok  02:01  03:01   Failed 2 tests.
     //RomLoadCorrect = gb->loadROM("..\\..\\roms\\blargg\\mem_timing-2\\mem_timing.gb");             // Attempted to write not usable memory
-    RomLoadCorrect = gb->loadROM("..\\..\\roms\\mealybug-tearoom-tests\\m3_bgp_change.gb");
+    //RomLoadCorrect = gb->loadROM("..\\..\\roms\\mealybug-tearoom-tests\\m3_bgp_change.gb");
     //RomLoadCorrect = gb->loadROM("..\\..\\roms\\blargg\\cpu_instrs\\individual\\09-op r,r.gb");
     //RomLoadCorrect = gb->loadROM("..\\..\\roms\\blargg\\cpu_instrs\\individual\\02-interrupts.gb");
 

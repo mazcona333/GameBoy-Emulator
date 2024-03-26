@@ -64,6 +64,8 @@ void Ppu::Tick()
 
             BackgroundPixelFIFO = {};
             ObjectPixelFIFO = {};
+            
+            DiscardPixels = memory->readMemory(REG_SCX) % 8;
         }
 
         if (!SpriteFetch)
@@ -103,7 +105,9 @@ void Ppu::Tick()
         }
 
         if (!SpriteFetch)
+        {
             renderPixel(hPixelDrawing, getLY());
+        }
 
         if (hPixelDrawing == 160)
         {
@@ -139,13 +143,15 @@ void Ppu::Tick()
 
 void Ppu::renderPixel(uint8_t LX, uint8_t LY)
 {
-    uint8_t SCX = memory->readMemory(REG_SCX);
     if (BackgroundPixelFIFO.empty())
         return;
-    /* if (LX < SCX)
+
+    if (DiscardPixels > 0)
     {
         BackgroundPixelFIFO.pop();
-    } */
+        DiscardPixels--;
+        return;
+    }
 
     uint8_t ColorID = BackgroundPixelFIFO.front().Color;
     BackgroundPixelFIFO.pop();

@@ -118,6 +118,8 @@ private:
     PixelFetcher *ObjectPixelFetcher;
     std::queue<Pixel> ObjectPixelFIFO;
     void renderPixel(uint8_t LX, uint8_t LY);
+
+    uint8_t DiscardPixels;
 };
 
 #endif // PPU_H

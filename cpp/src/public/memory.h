@@ -3,6 +3,12 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#include "mbc.h"
+#include "mbc0.h"
+#include "mbc1.h"
+#include "mbc2.h"
+#include "mbc3.h"
+
 #define MEM_OAM_START 0xFE00
 #define REG_JOYP 0xFF00
 #define REG_DIV 0xFF04
@@ -26,13 +32,6 @@
 #define MEMORY_SIZE (0xFFFF + 1)
 
 #define BOOTROM_SIZE (0x100 + 1)
-#define MAX_ROMBANK 512
-#define ROMBANK_SIZE (0x3FFF + 1)
-#define MAX_RAMBANK 16
-#define RAMBANK_SIZE (0x1FFF + 1)
-
-typedef uint8_t ROMbank[ROMBANK_SIZE];
-typedef uint8_t RAMbank[RAMBANK_SIZE];
 
 class Memory
 {
@@ -62,10 +61,8 @@ private:
 
     uint8_t CartridgeType;
     uint8_t BootROM[BOOTROM_SIZE];
-    uint8_t nRomBanks;
-    ROMbank cartridgeROM[MAX_ROMBANK];
-    uint8_t nRamBanks;
-    ROMbank cartridgeRAM[MAX_RAMBANK];
+
+    Mbc* mbc;
 
     uint8_t readMemoryROMBank0(uint16_t Adress);
     uint8_t readMemoryROMBankN(uint16_t Adress);

@@ -1,5 +1,7 @@
 #include "../public/memory.h"
 
+#include "../public/mbc1.h"
+
 #include <stdexcept>
 #include <iostream>
 #include <fstream>
@@ -152,35 +154,60 @@ bool Memory::loadToMemory(char const *filename, bool boot)
     {
         // Load ROM in memory
         char c;
+
+        if (!boot)
+        {
+            file.seekg(0x147);
+            file.get(c);
+            CartridgeType = c;
+            if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09)) // No MBC
+            {
+                mbc = new Mbc0();
+            }
+            else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03) // MBC1
+            {
+                mbc = new Mbc1();
+            }
+            else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO MBC2
+            {
+                mbc = new Mbc2();
+            }
+            else if (CartridgeType == 0x0F || CartridgeType == 0x10 || CartridgeType == 0x11 || CartridgeType == 0x12 || CartridgeType == 0x13) // TODO MBC3
+            {
+                mbc = new Mbc3();
+            }
+        }
+
+        file.seekg(0);
         for (long i = 0; file.get(c); i++)
         {
             if (i == 0x147)
                 CartridgeType = c;
             if (i == 0x148)
             {
-                nRomBanks = 2 * (1 << c);
+                mbc->setRomBanks(2 * (1 << c));
             }
             if (i == 0x149)
             {
                 switch (c)
                 {
                 case 0:
-                    nRamBanks = 0;
+                    mbc->setRamBanks(0);
                     break;
                 case 1: // Unused
-                    nRamBanks = 0;
+                    mbc->setRamBanks(0);
                     break;
                 case 2:
-                    nRamBanks = 1;
+                    mbc->setRamBanks(1);
                     break;
                 case 3:
-                    nRamBanks = 4;
+                    mbc->setRamBanks(4);
                     break;
                 case 4:
-                    nRamBanks = 16;
+                    mbc->setRamBanks(16);
                     break;
                 case 5:
-                    nRamBanks = 8;
+                    mbc->setRamBanks(8);
                     break;
                 }
             }
@@ -189,21 +216,7 @@ bool Memory::loadToMemory(char const *filename, bool boot)
             else if (DebugMode)
                 memory[i] = c;
             else
-                cartridgeROM[i / (ROMBANK_SIZE)][i % (ROMBANK_SIZE)] = c;
-        }
-
-        if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-        {
-        }
-        else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
-        {
-            writeMBCRegister(0x0000, 0);
-            writeMBCRegister(0x2000, 0);
-            writeMBCRegister(0x4000, 0);
-            writeMBCRegister(0x6000, 0);
-        }
-        else
-        {
+                mbc->setRomBank((uint8_t)(i / (ROMBANK_SIZE)), i % (ROMBANK_SIZE), c);
         }
 
         return true;
@@ -226,7 +239,7 @@ bool Memory::loadBoot()
 {
     if (BootRomEnabled)
         return loadToMemory("..\\..\\roms\\boot\\dmg_boot.bin", true);
-        //return loadToMemory("..\\..\\roms\\boot\\mgb_boot.bin", true);
+    // return loadToMemory("..\\..\\roms\\boot\\mgb_boot.bin", true);
     else
     {
         memory[REG_JOYP] = 0xCF;
@@ -292,156 +305,24 @@ uint8_t Memory::readMemoryROMBank0(uint16_t Adress)
     {
         return BootROM[Adress];
     }
-
-    uint8_t nBank = 0;
-    if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-        return cartridgeROM[0][Adress];
-    else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
-    {
-        if (!memory[0x6000]) // If Banking Mode == 0
-        {
-            return cartridgeROM[nBank][Adress];
-        }
-        else
-        {
-            nBank = (memory[0x4000] << 5) + nBank;
-        }
-        return cartridgeROM[nBank & (nRomBanks - 1)][Adress];
-    }
-    else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
-    {
-    }
-    else
-    {
-        std::cout << "MBC not supported\n";
-        throw std::length_error("MBC not supported");
-    }
+    return mbc->readMemoryROMBank0(Adress);
 }
 uint8_t Memory::readMemoryROMBankN(uint16_t Adress)
 {
-    uint8_t nBank = 1;
-    if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-        return cartridgeROM[1][Adress];
-    else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
-    {
-        nBank = memory[0x2000];
-        nBank = (memory[0x4000] << 5) + nBank;
-        return cartridgeROM[nBank & (nRomBanks - 1)][Adress];
-    }
-    else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
-    {
-    }
-    else
-    {
-        std::cout << "MBC not supported\n";
-        throw std::length_error("MBC not supported");
-    }
+    return mbc->readMemoryROMBankN(Adress);
 }
 uint8_t Memory::readMemoryRAMBank(uint16_t Adress)
 {
-    uint8_t nBank = 0;
-    if (nRamBanks > 0)
-    {
-        if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-            return cartridgeRAM[0][Adress];
-        else if ((CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03) && (memory[0x0000] & 0xF) == 0xA)
-        {
-            if (memory[0x6000]) // If Banking Mode == 1
-            {
-                nBank = memory[0x4000];
-            }
-            else
-            {
-                nBank = 0;
-            }
-            return cartridgeRAM[nBank & (nRamBanks - (nRamBanks > 1) ? 1 : 0)][Adress];
-        }
-        else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
-        {
-        }
-        else
-        {
-            // TODO
-            std::cout << "MBC not supported\n";
-            throw std::length_error("MBC not supported");
-        }
-    }
-    else
-    {
-        return 0xFF;
-    }
+    return mbc->readMemoryRAMBank(Adress);
 }
 void Memory::writeMemoryRAMBank(uint16_t Adress, uint8_t Value)
 {
-    uint8_t nBank = 0;
-    if (nRamBanks > 0)
-    {
-        if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-            cartridgeRAM[0][Adress] = Value;
-        else if ((CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03) && (memory[0x0000] & 0xF) == 0xA)
-        {
-            if (memory[0x6000]) // If Banking Mode == 1
-            {
-                nBank = memory[0x4000];
-            }
-            else
-            {
-                nBank = 0;
-            }
-            cartridgeRAM[nBank & (nRamBanks - (nRamBanks > 1) ? 1 : 0)][Adress] = Value;
-        }
-        else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
-        {
-        }
-        else
-        {
-            // TODO
-            std::cout << "MBC not supported\n";
-            throw std::length_error("MBC not supported");
-        }
-    }
+    mbc->writeMemoryRAMBank(Adress, Value);
 }
 
 void Memory::writeMBCRegister(uint16_t Adress, uint8_t Value)
 {
-    if ((CartridgeType == 0x00 || CartridgeType == 0x08 || CartridgeType == 0x09))
-    {
-        //memory[Adress] = Value;
-        //cartridgeRAM[Adress / ROMBANK_SIZE][Adress] = Value;
-        std::cout << "Writting to ROM\n";
-    }
-    else if (CartridgeType == 0x01 || CartridgeType == 0x02 || CartridgeType == 0x03)
-    {
-        if (Adress >= 0x0000 && Adress <= 0x1FFF)
-        { // RAM Enable
-            memory[0x0000] = Value & 0xF;
-        }
-        if (Adress >= 0x2000 && Adress <= 0x3FFF)
-        {                                    // ROM Bank Number
-            uint8_t NewValue = Value & 0x1F; // 5-bit register
-            if (NewValue == 0)               // If the register is set to 0, it is set to 1 instead
-                NewValue = 1;
-            NewValue = NewValue & (nRomBanks - 1); // Mask to take only the necessary bits for the number of banks
-            memory[0x2000] = NewValue;
-        }
-        if (Adress >= 0x4000 && Adress <= 0x5FFF)
-        {                                 // RAM Bank Number or Upper Bits ROM Bank Number
-            memory[0x4000] = Value & 0x3; // 2-bit register
-        }
-        if (Adress >= 0x6000 && Adress <= 0x7FFF)
-        {                                        // Banking Mode Select
-            memory[0x6000] = Value & 0b00000001; // 1-bit register
-        }
-    }
-    else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO
-    {
-    }
-    else
-    {
-        // TODO
-        std::cout << "MBC not supported\n";
-        throw std::length_error("MBC not supported");
-    }
+    mbc->writeMBCRegister(Adress, Value);
 }
 
 void Memory::writeMemoryIO(uint16_t Adress, uint8_t Value)
@@ -453,7 +334,7 @@ void Memory::writeMemoryIO(uint16_t Adress, uint8_t Value)
 
     if (Adress == 0xFF50 && Value == 0xFF)
     {
-        //memory[REG_DIV] = 0xAD; // TODO REMOVE bypass bully test div
+        // memory[REG_DIV] = 0xAD; // TODO REMOVE bypass bully test div
     }
 
     if (Adress == 0xFF03 || (Adress > 0xFF07 && Adress < 0xFF0F) || Adress == 0xFF15 || Adress == 0xFF1F || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4B && Adress < 0xFF50) || Adress > 0xFF50)
