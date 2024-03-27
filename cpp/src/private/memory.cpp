@@ -59,8 +59,8 @@ uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
     }
     else if (Adress >= 0xFEA0 && Adress <= 0xFEFF) // NOT USABLE TODO
     {
-        // return 0x00;
-        return memory[Adress];
+        return 0xFF;
+        // return memory[Adress];
     }
     else if (Adress >= 0xFF00 && Adress <= 0xFF7F) // IO Registers
     {
@@ -168,13 +168,18 @@ bool Memory::loadToMemory(char const *filename, bool boot)
             {
                 mbc = new Mbc1();
             }
-            else if (CartridgeType == 0x05 || CartridgeType == 0x06) // TODO MBC2
+            else if (CartridgeType == 0x05 || CartridgeType == 0x06) // MBC2
             {
                 mbc = new Mbc2();
             }
-            else if (CartridgeType == 0x0F || CartridgeType == 0x10 || CartridgeType == 0x11 || CartridgeType == 0x12 || CartridgeType == 0x13) // TODO MBC3
+            else if (CartridgeType == 0x0F || CartridgeType == 0x10 || CartridgeType == 0x11 || CartridgeType == 0x12 || CartridgeType == 0x13) // MBC3
             {
                 mbc = new Mbc3();
+            }
+            else
+            {
+                std::cout << "MBC not suported\n";
+                throw std::out_of_range("MBC not suported");
             }
         }
 

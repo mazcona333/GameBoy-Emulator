@@ -18,6 +18,10 @@ private:
     uint8_t RAMBankNumberRTCRegisterSelect;
     uint8_t LatchClockData;
     uint8_t RTCRegister[5];
+
+    uint64_t LastTime;
+    uint64_t GetCurrentTime();
+    void LatchRTC();
 };
 
 #endif // MBC3_H

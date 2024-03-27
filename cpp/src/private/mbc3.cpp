@@ -1,8 +1,14 @@
 #include "../public/mbc3.h"
 
+#include <chrono>
+
 Mbc3::Mbc3()
 {
-    // TODO Load Clock
+    if (LastTime == 0)
+    {
+        LastTime = GetCurrentTime();
+    }
+    // TODO Restore saved time
 }
 
 uint8_t Mbc3::readMemoryROMBank0(uint16_t Adress)
@@ -18,9 +24,12 @@ uint8_t Mbc3::readMemoryRAMBank(uint16_t Adress)
 {
     if (nRamBanks > 0 && RAMTimerEnable == 0xA)
     {
-        if(RAMBankNumberRTCRegisterSelect <= 3){
+        if (RAMBankNumberRTCRegisterSelect <= 3)
+        {
             return cartridgeRAM[RAMBankNumberRTCRegisterSelect][Adress];
-        }else{
+        }
+        else
+        {
             return RTCRegister[RAMBankNumberRTCRegisterSelect & 0x7];
         }
     }
@@ -33,9 +42,12 @@ void Mbc3::writeMemoryRAMBank(uint16_t Adress, uint8_t Value)
 {
     if (nRamBanks > 0 && RAMTimerEnable == 0xA)
     {
-        if(RAMBankNumberRTCRegisterSelect <= 3){
+        if (RAMBankNumberRTCRegisterSelect <= 3)
+        {
             cartridgeRAM[RAMBankNumberRTCRegisterSelect][Adress] = Value;
-        }else{
+        }
+        else
+        {
             RTCRegister[RAMBankNumberRTCRegisterSelect & 0x7] = Value;
         }
     }
@@ -61,13 +73,60 @@ void Mbc3::writeMBCRegister(uint16_t Adress, uint8_t Value)
     if (Adress >= 0x6000 && Adress <= 0x7FFF)
     { // Latch Clock
         if (LatchClockData == 0 && Value == 1)
-        { // TODO
-            RTCRegister[0] = 0; // Seconds
-            RTCRegister[1] = 0; // Minutes
-            RTCRegister[2] = 0; // Hours
-            RTCRegister[3] = 0; // Days Lower 8
-            RTCRegister[4] = 0; // Days Upper 1, Carry, Halt
+        {
+            LatchRTC();
         }
         LatchClockData = Value;
     }
+}
+
+uint64_t Mbc3::GetCurrentTime()
+{
+    const auto now = std::chrono::system_clock::now();
+    const auto epoch = now.time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::seconds>(epoch).count();
+}
+
+void Mbc3::LatchRTC()
+{
+    uint64_t CurrentTimeSecs = GetCurrentTime();
+    uint64_t TimeDiff = CurrentTimeSecs - LastTime;
+    LastTime = CurrentTimeSecs;
+
+    RTCRegister[0] += (uint8_t)(TimeDiff % 60); // Seconds
+    if (RTCRegister[0] > 59)
+    {
+        RTCRegister[0] -= 60;
+        RTCRegister[1] += 1;
+    }
+    TimeDiff /= 60;
+
+    RTCRegister[1] += (uint8_t)(TimeDiff % 60);
+    if (RTCRegister[1] > 59)
+    {
+        RTCRegister[1] -= 60;
+        RTCRegister[2] += 1;
+    }
+    TimeDiff /= 60;
+
+    RTCRegister[2] += (uint8_t)(TimeDiff % 24);
+    uint16_t rtc_days = 0;
+    if (RTCRegister[2] > 23)
+    {
+        RTCRegister[2] -= 24;
+        rtc_days += 1;
+    }
+    TimeDiff /= 24;
+
+    rtc_days += (uint16_t)RTCRegister[3] + ((uint16_t)(RTCRegister[4]) & 0x01);
+    rtc_days += (uint16_t)TimeDiff;
+    if (rtc_days > 511)
+    {
+        rtc_days %= 512;
+        // set the carry flag and clear the rest of the bits
+        RTCRegister[4] |= 0x80;
+        RTCRegister[4] &= 0xC0;
+    }
+    RTCRegister[3] = (uint8_t)(rtc_days & 0xFF);
+    RTCRegister[4] |= (uint8_t)((rtc_days & 0x100) >> 8);
 }
