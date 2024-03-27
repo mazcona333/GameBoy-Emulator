@@ -4,7 +4,7 @@ Cpu::Cpu(Memory *memory, bool EmulateMCycles) : memory(memory), CycleAccurate(Em
 {
     if (!EmulateMCycles)
     {
-        //CycleCounter++;
+        // CycleCounter++;
         UpdateTimer(CycleCounter);
     }
 }
@@ -17,8 +17,8 @@ uint8_t Cpu::readMemory(uint16_t Adress)
 void Cpu::writeMemory(uint16_t Adress, uint8_t Value)
 {
     memory->writeMemory(Adress, Value);
-    //if (Adress == REG_DMA)
-        //RunningMode = CpuMode::OAMDMATRANSFER; // TODO
+    if (Adress == REG_DMA)
+        OAMDMATransferCounter = 0x00;
 }
 
 void Cpu::SetBootedState()
@@ -95,12 +95,6 @@ uint8_t Cpu::Tick()
             }
             ime = 1;
         }
-        break;
-    case CpuMode::OAMDMATRANSFER: // TODO
-        /* memory->OAMDMATransfer(OAMDMATransferCounter);
-        OAMDMATransferCounter++;
-        if(OAMDMATransferCounter % 0xA == 0)
-            RunningMode = CpuMode::NORMAL; */
         break;
 
     default: // Never happens
@@ -233,6 +227,15 @@ void Cpu::UpdateTimer(uint8_t Cycle)
             memory->writeMemory(REG_TIMA, memory->readMemory(REG_TMA));
             memory->writeMemory(REG_IF, memory->readMemory(REG_IF) | 0b00000100); // Request TIMER interrupt
         }
+    }
+}
+
+void Cpu::CheckOAMDMATransfer()
+{
+    if (OAMDMATransferCounter <= 0xA0)
+    {
+        memory->OAMDMATransfer(OAMDMATransferCounter);
+        OAMDMATransferCounter++;
     }
 }
 

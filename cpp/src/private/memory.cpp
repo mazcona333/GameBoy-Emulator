@@ -25,6 +25,18 @@ uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
         return memory[Adress];
     }
 
+    if (OAMDMATranser)
+    {
+        if (Adress >= 0xFF80 && Adress <= 0xFFFE)
+        {
+            return memory[Adress];
+        }
+        else
+        {
+            return 0x00;
+        }
+    }
+
     if (Adress >= 0x0000 && Adress <= 0x3FFF) // ROM bank 00
     {
         return readMemoryROMBank0(Adress);
@@ -33,7 +45,7 @@ uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
     {
         return readMemoryROMBankN(Adress - ROMBANK_SIZE);
     }
-    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // WIP VRAM
+    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // VRAM
     {
         return readMemoryVRAM(Adress, IsPPU);
     }
@@ -53,7 +65,7 @@ uint8_t Memory::readMemory(uint16_t Adress, bool IsPPU)
     {
         return memory[Adress - 0x2000];
     }
-    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // WIP OAM
+    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // OAM
     {
         return readMemoryOAM(Adress, IsPPU);
     }
@@ -89,6 +101,14 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
         return;
     }
 
+    if (OAMDMATranser)
+    {
+        if (Adress >= 0xFF80 && Adress <= 0xFFFE)
+        {
+            memory[Adress] = Value;
+        }
+    }
+
     if (Adress >= 0x0000 && Adress <= 0x3FFF) // ROM bank 00
     {
         writeMBCRegister(Adress, Value);
@@ -97,7 +117,7 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     {
         writeMBCRegister(Adress, Value);
     }
-    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // WIP VRAM
+    else if (Adress >= 0x8000 && Adress <= 0x9FFF) // VRAM
     {
         writeMemoryVRAM(Adress, Value);
     }
@@ -117,7 +137,7 @@ void Memory::writeMemory(uint16_t Adress, uint8_t Value)
     {
         memory[Adress - 0x2000] = Value;
     }
-    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // WIP OAM
+    else if (Adress >= 0xFE00 && Adress <= 0xFE9F) // OAM
     {
         writeMemoryOAM(Adress, Value);
     }
@@ -389,8 +409,8 @@ uint8_t Memory::getPPUMode()
 uint8_t Memory::readMemoryIO(uint16_t Adress)
 {
     if (Adress == 0xFF03 || (Adress > 0xFF07 && Adress < 0xFF0F) || Adress == 0xFF15 || Adress == 0xFF1F || (Adress > 0xFF26 && Adress < 0xFF30) || (Adress > 0xFF4B && Adress < 0xFF50) || Adress > 0xFF50)
-        // if (Adress == 0xFF03)
         return 0xFF;
+
     return memory[Adress];
 }
 
@@ -444,5 +464,13 @@ uint8_t Memory::readMemoryOAM(uint16_t Adress, bool IsPPU)
 
 void Memory::OAMDMATransfer(uint8_t AdressLow)
 {
-    memory[MEM_OAM_START + AdressLow] = memory[(memory[REG_DMA] << 8) + AdressLow];
+    if (AdressLow < 0xA0)
+    {
+        OAMDMATranser = true;
+        memory[MEM_OAM_START + AdressLow] = memory[(memory[REG_DMA] << 8) + AdressLow];
+    }
+    else
+    {
+        OAMDMATranser = false;
+    }
 }

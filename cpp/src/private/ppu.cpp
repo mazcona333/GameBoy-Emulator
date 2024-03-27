@@ -64,44 +64,50 @@ void Ppu::Tick()
 
             BackgroundPixelFIFO = {};
             ObjectPixelFIFO = {};
-            
+
             DiscardPixels = memory->readMemory(REG_SCX) % 8;
         }
 
         if (!SpriteFetch)
             BackgroundPixelFetcher->Step();
 
-        if (memory->readMemory(REG_LCDC) & 0b0000010)
+        if (memory->readMemory(REG_LCDC) & 0b0000010) // OBJ enable
         {
-            bool ObjectInLine = false;
-            for (std::vector<OAMData>::iterator obj = OAMBuffer.begin(); obj != OAMBuffer.end();)
+            std::vector<OAMData>::iterator ObjectInLine = OAMBuffer.end();
+            for (std::vector<OAMData>::iterator obj = OAMBuffer.begin(); obj != OAMBuffer.end(); ++obj)
             {
                 if ((*obj).XPostion <= hPixelDrawing + 8)
                 {
-                    ObjectInLine = true;
-                    ObjectPixelFetcher->SetSpriteData(&(*obj));
-                    OAMBuffer.erase(obj);
+                    ObjectInLine = obj;
                     break;
                 }
             }
-            if (ObjectInLine)
+            if (ObjectInLine != OAMBuffer.end())
             {
+                ObjectPixelFetcher->SetSpriteData(&(*ObjectInLine));
+                OAMBuffer.erase(ObjectInLine);
                 SpriteFetch = true;
                 BackgroundPixelFetcher->ResetPhase();
             }
             else
             {
-                // TODO Cancel Object Fetch
+                SpriteFetch = false;
             }
+        }
+        else
+        {
+            SpriteFetch = false;
         }
 
         if (SpriteFetch)
         {
-            if (ObjectPixelFetcher->GetStep() < 3 && BackgroundPixelFIFO.empty())
+            if (ObjectPixelFetcher->GetStep() < 4 && BackgroundPixelFIFO.empty())
                 ObjectPixelFetcher->Step();
             else
+            {
                 SpriteFetch = false;
-            // TODO Cancel Object Fetch
+                ObjectPixelFetcher->Step();
+            }
         }
 
         if (!SpriteFetch)
@@ -277,16 +283,15 @@ void PixelFetcher::Step()
     {
         FetchTileDataHigh();
     }
-    else if (FetchPhase == 7 || (FetchPhase == 6 && Mode == FetchingMode::SPRITE))
+    else if (FetchPhase == 7)
+    {
+    }
+    else if (FetchPhase == 9 || (FetchPhase == 8 && Mode == FetchingMode::SPRITE))
     {
         Push();
     }
-    else
-    {
-        // StallCounter++;
-    }
 
-    FetchPhase = (FetchPhase + 1) % 8;
+    FetchPhase = (FetchPhase + 1) % 10;
 }
 
 void PixelFetcher::FetchTileNo()

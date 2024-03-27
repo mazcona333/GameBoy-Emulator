@@ -72,6 +72,7 @@ private:
 
     void writeMemoryIO(uint16_t Adress, uint8_t Value);
     uint8_t readMemoryIO(uint16_t Adress);
+    bool OAMDMATranser = false;
 
     void writeMemoryVRAM(uint16_t Adress, uint8_t Value);
     uint8_t readMemoryVRAM(uint16_t Adress, bool IsPPU = false);

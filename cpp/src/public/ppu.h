@@ -57,7 +57,7 @@ public:
     {
         FetchPhase = 0;
     };
-    uint8_t GetStep() { return (FetchPhase & 1 ? FetchPhase - 1 : FetchPhase) / 2; }
+    uint8_t GetStep() { return FetchPhase / 2; }
     void SetSpriteData(OAMData *Sprite) { SpriteData = Sprite; }
 
 private:
